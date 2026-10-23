@@ -1,0 +1,61 @@
+================================================================================
+FULL TEMPLATED PROMPT (example 1):
+<|im_start|>system
+You are a contract analysis assistant. You extract clauses from contract excerpts. Reply with a single JSON object and nothing else.<|im_end|>
+<|im_start|>user
+Clause type: Governing Law
+Definition: Which state's or country's law governs the interpretation of the contract.
+
+If the excerpt contains this clause, copy the clause text EXACTLY as it appears. If it does not, set found to false and text to null.
+Output format: {"clause_type": "<type>", "found": true|false, "text": "<exact text>"|null}
+
+Excerpt:
+"""
+12. Notices. All notices under this Agreement shall be in writing and delivered by certified mail to the addresses set forth above.
+
+13. Governing Law. This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to its conflict of laws principles.
+
+14. Entire Agreement. This Agreement constitutes the entire agreement between the parties and supersedes all prior understandings.
+"""<|im_end|>
+<|im_start|>assistant
+
+================================================================================
+Prompt length: 210 tokens
+First 25 tokens (id -> piece):
+   151644 -> '<|im_start|>'
+     8948 -> 'system'
+      198 -> '\n'
+     2610 -> 'You'
+      525 -> ' are'
+      264 -> ' a'
+     5116 -> ' contract'
+     6358 -> ' analysis'
+    17847 -> ' assistant'
+       13 -> '.'
+     1446 -> ' You'
+     8649 -> ' extract'
+    49098 -> ' clauses'
+      504 -> ' from'
+     5116 -> ' contract'
+    83390 -> ' excerpts'
+       13 -> '.'
+    17841 -> ' Reply'
+      448 -> ' with'
+      264 -> ' a'
+     3175 -> ' single'
+     4718 -> ' JSON'
+     1633 -> ' object'
+      323 -> ' and'
+     4302 -> ' nothing'
+
+================================================================================
+EXAMPLE 1: clause_type='Governing Law'  (4.1s)
+RAW OUTPUT:
+'{"clause_type": "Governing Law", "found": true, "text": "without regard to its conflict of laws principles."}'
+-> parses as JSON: yes
+
+================================================================================
+EXAMPLE 2: clause_type='Non-Compete'  (1.8s)
+RAW OUTPUT:
+'{"clause_type": "Non-Compete", "found": true, "text": "9. Term. This Agreement shall commence on the Effective Date and continue for a period of two (2) years."}'
+-> parses as JSON: yes
