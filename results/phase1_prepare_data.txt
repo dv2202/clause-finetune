@@ -1,0 +1,48 @@
+label overrides: 6 (title, clause_type, chunk) items dropped; positives < 8 words skipped
+contracts: 510  split sizes: train=408, valid=51, test=51
+chunk words: p5=258 median=428 p95=563 max=600  (n chunks=10197)
+available candidates (pos / neg / hard-neg) per split and type:
+  train Governing Law                pos= 391 neg= 7787 hard= 1551
+  train Termination For Convenience  pos= 171 neg= 8009 hard= 2523
+  train Non-Compete                  pos= 176 neg= 7999 hard=  712
+  train Cap On Liability             pos= 408 neg= 7766 hard= 1743
+  train Anti-Assignment              pos= 423 neg= 7753 hard= 2172
+  valid Governing Law                pos=  50 neg=  960 hard=  203
+  valid Termination For Convenience  pos=  23 neg=  987 hard=  270
+  valid Non-Compete                  pos=  12 neg=  998 hard=   90
+  valid Cap On Liability             pos=  39 neg=  968 hard=  200
+  valid Anti-Assignment              pos=  54 neg=  955 hard=  221
+  test  Governing Law                pos=  48 neg=  961 hard=  222
+  test  Termination For Convenience  pos=  25 neg=  983 hard=  265
+  test  Non-Compete                  pos=  15 neg=  993 hard=  115
+  test  Cap On Liability             pos=  41 neg=  968 hard=  233
+  test  Anti-Assignment              pos=  50 neg=  959 hard=  215
+checks passed: exact-span containment, no contract overlap across splits
+
+final counts:
+  train  n=1000 pos=500 neg=500 hard_neg=250 (50% of neg) contracts=262 tokens p50=758 p90=925 p95=982 p99=1118 max=1389
+         Governing Law                pos=100 neg=100
+         Termination For Convenience  pos=100 neg=100
+         Non-Compete                  pos=100 neg=100
+         Cap On Liability             pos=100 neg=100
+         Anti-Assignment              pos=100 neg=100
+  valid  n= 146 pos=71 neg=75 hard_neg=40 (53% of neg) contracts=38 tokens p50=783 p90=961 p95=1006 p99=1215 max=1257
+         Governing Law                pos= 15 neg= 15
+         Termination For Convenience  pos= 15 neg= 15
+         Non-Compete                  pos= 11 neg= 15
+         Cap On Liability             pos= 15 neg= 15
+         Anti-Assignment              pos= 15 neg= 15
+  test   n= 194 pos=94 neg=100 hard_neg=50 (50% of neg) contracts=37 tokens p50=767 p90=911 p95=977 p99=1455 max=1569
+         Governing Law                pos= 20 neg= 20
+         Termination For Convenience  pos= 20 neg= 20
+         Non-Compete                  pos= 14 neg= 20
+         Cap On Liability             pos= 20 neg= 20
+         Anti-Assignment              pos= 20 neg= 20
+  golden n=  60 pos=30 neg=30 hard_neg=15 (50% of neg) contracts=29 tokens p50=780 p90=883 p95=1043 p99=1083 max=1083
+         Governing Law                pos=  6 neg=  6
+         Termination For Convenience  pos=  6 neg=  6
+         Non-Compete                  pos=  6 neg=  6
+         Cap On Liability             pos=  6 neg=  6
+         Anti-Assignment              pos=  6 neg=  6
+
+wrote data/processed/{train,valid,test,golden}.jsonl and results/data_stats.json

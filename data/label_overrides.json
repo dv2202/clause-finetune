@@ -1,0 +1,14 @@
+[
+  {"title": "PACIRA PHARMACEUTICALS, INC. - A_R STRATEGIC LICENSING, DISTRIBUTION AND MARKETING AGREEMENT ", "clause_type": "Governing Law", "chunk_id": 56,
+   "reason": "Negative, but contains 'This Note shall be governed by ... the laws of the State of New York' (governing law of an attached note). Ambiguous: drop."},
+  {"title": "QuantumGroupIncFl_20090120_8-K_EX-99.2_3672910_EX-99.2_Hosting Agreement", "clause_type": "Termination For Convenience", "chunk_id": 42,
+   "reason": "Negative, but says 'In the event the Customer elects to terminate this Agreement ... for convenience'. Implies the right: drop."},
+  {"title": "OFGBANCORP_03_28_2007-EX-10.23-OUTSOURCING AGREEMENT", "clause_type": "Termination For Convenience", "chunk_id": 58,
+   "reason": "Negative, but has heading 'Termination for Convenience' + 'if Customer elects to terminate ... for any reason'. Drop."},
+  {"title": "LegacyEducationAllianceInc_20200330_10-K_EX-10.18_12090678_EX-10.18_Development Agreement", "clause_type": "Non-Compete", "chunk_id": 3,
+   "reason": "Positive, but the gold text is a royalty-based termination right, not a non-compete. Drop."},
+  {"title": "NETGROCERINC_07_31_1998-EX-10.15-SPONSORSHIP AGREEMENT", "clause_type": "Non-Compete", "chunk_id": 13,
+   "reason": "Positive, but the gold text is only an exhibit listing competitor names, no restriction. Drop."},
+  {"title": "RandWorldwideInc_20010402_8-KA_EX-10.2_2102464_EX-10.2_Co-Branding Agreement", "clause_type": "Non-Compete", "chunk_id": 11,
+   "reason": "Positive, but the gold text is a fragment ('connection with the Purchase Agreement and (ii) similar to ...'); the actual restriction is on the previous page, outside the chunk. Drop."}
+]

@@ -44,3 +44,41 @@ A: It's the model-specific format that turns role-tagged messages into one token
 
 **Q: The base model already outputs valid JSON. Why fine-tune?**
 A: Valid format isn't correct content. The base model returned a fragment instead of the full clause and labelled an unrelated clause as a non-compete. Fine-tuning on expert-labelled CUAD data teaches when to say `found: false` and where clause boundaries are. We'll prove the gap with baselines in Phase 2, not assume it.
+
+---
+
+## Phase 1: Build the dataset
+
+### What was done
+- Source: official CUAD zip (`data/raw/CUADv1.json`, 510 contracts, SQuAD format). The HF `theatticusproject/cuad-qa` repo is only a loading script, which `datasets` 5.x refuses to run, so we used the spec's fallback.
+- `src/prepare_data.py` pipeline: whitespace normalisation (with an old->new offset map) -> split by contract title 80/10/10 (seed 42) -> paragraph-aware chunking with 1-paragraph overlap (target 400, max 600 words) -> label each (chunk, clause type) -> sample positives + negatives -> chat JSONL.
+- Labelling: positive if a gold span lies fully inside the chunk (longest one used); skip if a span is cut by the boundary; negative otherwise. Hard negative = negative chunk containing clause keywords ("governed", "terminate", "assign", ...).
+- Final data (numbers from `results/phase1_prepare_data.txt`): train 1000 (500/500, 262 contracts), valid 146 (71/75), test 194 (94/100), golden 60 (30/30, subset of test). Half of all negatives are hard. Tokens: train p50 758, p99 1118, max 1389, so max_seq_length 2048 truncates nothing.
+- Non-Compete is rare: only 11 valid and 14 test positives exist under our rules, so valid/test are slightly below 150/200.
+- `data/raw/train_separate_questions.json` + `test.json` are CUAD's official 408/102 benchmark split. Not used: we need a validation set, so we made our own contract-level 80/10/10.
+
+### Label review (checkpoint delegated to Claude, 2026-10-24)
+Devansh had no time, so Claude reviewed instead. **Golden is "Claude-reviewed", not human-verified.** Method: a regex screen for strong clause patterns inside negatives, plus fragment flags on positives; then all flagged negatives (all splits) and all flagged valid/test positives were read; flagged train positives were skimmed.
+- Rule: positives whose gold text is < 8 words are skipped (CUAD sometimes highlights fragments like "You must:" or a bare heading).
+- 6 hand overrides in `data/label_overrides.json` (each with a reason): 3 train negatives that actually contain the clause, 2 train positives with the wrong clause type / a competitor list, 1 test positive that was a fragment whose real clause sat outside the chunk.
+- Sampling made stable (hash-based priority per item instead of a shared shuffled RNG), so dropping one item doesn't reshuffle every other pick.
+- Remaining known noise: CUAD often highlights clauses in pieces (mid-sentence starts/ends). These are expert labels and were kept.
+
+### Concepts
+- **Leakage**: if chunks of one contract are in both train and test, the model can memorise that contract's wording and look better than it is. Split by contract first, then chunk, and assert no overlap.
+- **Negatives**: with only positives the model learns "always say found=true" (exactly the Phase 0 hallucination). ~1:1 negatives teach when to say no; hard negatives teach meaning over keywords.
+- **Frozen test set**: test is used once at the end. If we tune on it, the score stops measuring generalisation.
+- **Never create a wrong label**: when a span is cut by a chunk boundary, skip that chunk instead of guessing.
+
+### Interview Q&A
+**Q: How did you avoid data leakage?**
+A: Split by contract title (seed 42) before chunking, so every chunk of a contract lives in exactly one split, and asserted zero title overlap across train/valid/test in code. Chunk-level random splitting would leak near-duplicate text through the overlapping chunks.
+
+**Q: Why include negatives, and what's a hard negative?**
+A: An extraction model in production mostly sees chunks without the clause; without negatives it learns to always answer found=true and hallucinate. We used ~1:1 negatives from the same contracts, and half are hard negatives (they contain words like "terminate" or "governed" but no labelled clause), so the model must understand meaning, not match keywords.
+
+**Q: How did you handle label noise in CUAD?**
+A: Three layers: skip ambiguous chunks automatically (span cut by a boundary), a rule for fragment labels (< 8 words), and a reviewed override file with a written reason per item. Overrides are keyed by (contract, clause type, chunk) and sampling is hash-based, so fixes are reproducible and don't reshuffle the dataset.
+
+**Q: Why did you normalise whitespace?**
+A: CUAD text has long runs of spaces from PDF extraction. They waste tokens, and the task is exact copying, so the model would have to reproduce random spacing. We collapsed whitespace and kept an offset map so gold spans still point to the exact text, then asserted every positive's text is a substring of its excerpt.

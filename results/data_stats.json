@@ -1,0 +1,146 @@
+{
+  "train": {
+    "n": 1000,
+    "pos": 500,
+    "neg": 500,
+    "hard_neg": 250,
+    "contracts": 262,
+    "token_percentiles": {
+      "50": 758,
+      "90": 925,
+      "95": 982,
+      "99": 1118,
+      "max": 1389
+    },
+    "per_type": {
+      "Governing Law": {
+        "pos": 100,
+        "neg": 100
+      },
+      "Termination For Convenience": {
+        "pos": 100,
+        "neg": 100
+      },
+      "Non-Compete": {
+        "pos": 100,
+        "neg": 100
+      },
+      "Cap On Liability": {
+        "pos": 100,
+        "neg": 100
+      },
+      "Anti-Assignment": {
+        "pos": 100,
+        "neg": 100
+      }
+    }
+  },
+  "valid": {
+    "n": 146,
+    "pos": 71,
+    "neg": 75,
+    "hard_neg": 40,
+    "contracts": 38,
+    "token_percentiles": {
+      "50": 783,
+      "90": 961,
+      "95": 1006,
+      "99": 1215,
+      "max": 1257
+    },
+    "per_type": {
+      "Governing Law": {
+        "pos": 15,
+        "neg": 15
+      },
+      "Termination For Convenience": {
+        "pos": 15,
+        "neg": 15
+      },
+      "Non-Compete": {
+        "pos": 11,
+        "neg": 15
+      },
+      "Cap On Liability": {
+        "pos": 15,
+        "neg": 15
+      },
+      "Anti-Assignment": {
+        "pos": 15,
+        "neg": 15
+      }
+    }
+  },
+  "test": {
+    "n": 194,
+    "pos": 94,
+    "neg": 100,
+    "hard_neg": 50,
+    "contracts": 37,
+    "token_percentiles": {
+      "50": 767,
+      "90": 911,
+      "95": 977,
+      "99": 1455,
+      "max": 1569
+    },
+    "per_type": {
+      "Governing Law": {
+        "pos": 20,
+        "neg": 20
+      },
+      "Termination For Convenience": {
+        "pos": 20,
+        "neg": 20
+      },
+      "Non-Compete": {
+        "pos": 14,
+        "neg": 20
+      },
+      "Cap On Liability": {
+        "pos": 20,
+        "neg": 20
+      },
+      "Anti-Assignment": {
+        "pos": 20,
+        "neg": 20
+      }
+    }
+  },
+  "golden": {
+    "n": 60,
+    "pos": 30,
+    "neg": 30,
+    "hard_neg": 15,
+    "contracts": 29,
+    "token_percentiles": {
+      "50": 780,
+      "90": 883,
+      "95": 1043,
+      "99": 1083,
+      "max": 1083
+    },
+    "per_type": {
+      "Governing Law": {
+        "pos": 6,
+        "neg": 6
+      },
+      "Termination For Convenience": {
+        "pos": 6,
+        "neg": 6
+      },
+      "Non-Compete": {
+        "pos": 6,
+        "neg": 6
+      },
+      "Cap On Liability": {
+        "pos": 6,
+        "neg": 6
+      },
+      "Anti-Assignment": {
+        "pos": 6,
+        "neg": 6
+      }
+    }
+  }
+}
