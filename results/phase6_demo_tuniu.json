@@ -1,0 +1,103 @@
+{
+  "contract": "app/samples/tuniu_cooperation_agreement.txt",
+  "top_k": 3,
+  "adapter": "adapters/final_it300",
+  "report": {
+    "Governing Law": {
+      "found": true,
+      "chunks_checked": [
+        4,
+        0,
+        5
+      ],
+      "results": [
+        {
+          "chunk": 4,
+          "status": "VERIFIED",
+          "text": "This Agreement shall be governed by and interpreted pursuant to the laws of the People's Republic of China that are promulgated and are publicly available, provided that the general international business practices shall apply if the laws of the People's Republic of China that are promulgated and are publicly available do not involve any matter in relation to this Agreement.",
+          "char_start": 11146,
+          "char_end": 11523
+        }
+      ]
+    },
+    "Termination For Convenience": {
+      "found": true,
+      "chunks_checked": [
+        3,
+        2,
+        4
+      ],
+      "results": [
+        {
+          "chunk": 3,
+          "status": "VERIFIED",
+          "text": "Party B shall have the right to terminate this Agreement in advance without the prior written consent from Party A, bysending a written notice to Party A but Party A may not terminate or rescind this Agreement;",
+          "char_start": 7268,
+          "char_end": 7478
+        },
+        {
+          "chunk": 2,
+          "status": "VERIFIED",
+          "text": "Prior to the expiration of the Term of Cooperation , this Agreement shall only be terminated upon occurrence of the followingcircumstances:",
+          "char_start": 7121,
+          "char_end": 7260
+        }
+      ]
+    },
+    "Non-Compete": {
+      "found": true,
+      "chunks_checked": [
+        1
+      ],
+      "results": [
+        {
+          "chunk": 1,
+          "status": "VERIFIED",
+          "text": "Party A irrevocably undertakes that, without Party B's consent, Party A shall not conduct any other business or make any commercial arrangement, including without limitation being engaged in or otherwise participating in any commercial activities and businesses independently or together with any other person or entity, nor shall it carry out any activities that may be competitive with or cause adverse effect to Party B's business.",
+          "char_start": 3574,
+          "char_end": 4008
+        }
+      ]
+    },
+    "Cap On Liability": {
+      "found": true,
+      "chunks_checked": [
+        4,
+        2,
+        0
+      ],
+      "results": [
+        {
+          "chunk": 4,
+          "status": "VERIFIED",
+          "text": "The Parties agree and acknowledge that:",
+          "char_start": 10257,
+          "char_end": 10296
+        },
+        {
+          "chunk": 2,
+          "status": "VERIFIED",
+          "text": "Except as otherwise agreed hereunder, if Party A or its subsidiaries fail to pay the Service Fee in full on schedule according to provisions of Article 4.1 and Article 4.2, then Party A or its subsidiaries shall, in addition to the continuance of the payment of Service Fee in full, it shall pay Party B the liquidated damages at a daily interest rate of 0.03% in respect of the outstanding Service Fee.",
+          "char_start": 6448,
+          "char_end": 6851
+        }
+      ]
+    },
+    "Anti-Assignment": {
+      "found": true,
+      "chunks_checked": [
+        5,
+        0
+      ],
+      "results": [
+        {
+          "chunk": 5,
+          "status": "VERIFIED",
+          "text": "The Parties agree and confirm that this Agreement shall constitute all understanding, interpretation and intentions of the Parties in respect of the cooperative business.",
+          "char_start": 13542,
+          "char_end": 13712
+        }
+      ]
+    }
+  }
+}

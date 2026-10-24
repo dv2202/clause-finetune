@@ -262,3 +262,25 @@ A: I spot-checked 5 general prompts against the base model: the answers were nea
 - Decision: deploy base 4-bit + adapter (the verified setup: 828 MB + 20 MB, fastest). The fp16 fused model is the "one folder" option if needed. The 4-bit fused model is not used.
 - Lesson: always re-run eval after any conversion step (fuse, quantize, export). "Should be the same" is a hypothesis.
 - Fix for a small fused model in future: fuse into a 16-bit base and then quantize with a calibration-aware method, or train LoRA on the 16-bit model; plain re-quantizing after fuse is lossy.
+- Measured why (all 112 adapted matrices, layers 12-27): after fuse + re-quantize, the rounding error is 1.29x the size of the LoRA update at 4-bit, but only 0.15x at 8-bit. At 4-bit the noise is bigger than the signal, so the update is mostly lost. Only ~11% of weights snap back to their exact old value; the rest move, but mostly in random directions, not the LoRA direction (10-48% of the update kept per matrix).
+- This is maths, not the Mac or MLX: any round-to-nearest 4-bit re-quantization (bitsandbytes NF4, GGUF Q4, MLX) has the same problem. How bad it is depends on update size vs step size, the number of bits, the quantization method (calibration-aware GPTQ/AWQ do better than plain rounding), and how sensitive the task is (our found decision is one token).
+
+### Step 2: CLI demo (`app/demo.py`, documented in `app/README.md`)
+- Pipeline: normalise -> chunk -> keyword retrieval (top 3 chunks per clause type) -> model -> verify guard.
+- Verify guard: exact copy = OK (show the document's text), >= 85% word similarity = REVIEW (show the closest real text), else BLOCKED. All 5 valid hallucinations became REVIEW; an invented sentence was BLOCKED.
+- Sample test contract: 12 calls in 42s; 3 of 5 clause types exact, 2 right chunk but wrong sentence. All were OK: the guard proves faithfulness (text is real), not correctness (right clause).
+
+### Step 3: README
+- Every number comes from `results/`. Devansh wrote the "why fine-tuning" and "why negatives / split by contract" points; Claude corrected facts (the split is by contract to stop leakage, not by clause category).
+
+### Concepts
+- **Faithfulness vs correctness**: a quote can be real and still be the wrong answer. String checks guarantee the first, only the model (or a reviewer) the second.
+- **Retrieval as a cost filter**: total recall = retrieval recall x model recall, so keep top-k generous.
+- **Deployment formats**: adapter + base (smallest, verified), fused 16-bit (one folder), GGUF for llama.cpp/Ollama (non-Mac), PEFT adapter for vLLM/Transformers on GPUs. Every conversion needs an eval.
+
+### Interview Q&A
+**Q: How do you stop a hallucinated clause from reaching a user?**
+A: Never display the model's text. Use it to locate text in the document: exact match shows the document's own span, a close match shows the closest real span for review, anything else is blocked. It's cheap string matching because we know which chunk the model read.
+
+**Q: What did you learn from deploying the model?**
+A: Fusing the adapter into the 4-bit base silently dropped F1 from 0.889 to 0.756, because re-quantization noise was larger than the LoRA update. I only caught it because I re-ran the eval after fusing. So the deployed artifact is base + adapter, and every conversion step gets an eval.
