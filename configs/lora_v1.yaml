@@ -1,0 +1,38 @@
+# ClauseFinder LoRA run v1. Every value is explained in LEARNING_LOG.md (Phase 3).
+# Time budget from the smoke test: ~8.6 s/iter at batch 2 on the M3 Air, so 300 iters ~ 43 min + evals.
+model: mlx-community/Qwen2.5-1.5B-Instruct-4bit   # frozen 4-bit base -> LoRA on it = QLoRA-style
+train: true
+data: data/processed                # train.jsonl (1000) + valid.jsonl (146); test is never touched here
+adapter_path: adapters/lora_v1
+fine_tune_type: lora                # only small A/B matrices are trained, base weights stay frozen
+optimizer: adamw
+seed: 42                            # same seed = same batch order = reproducible run
+
+# Which layers and how big the adapters are
+num_layers: 16                      # adapt the top 16 of 28 layers (all their linear layers: q,k,v,o,gate,up,down)
+lora_parameters:
+  rank: 8                           # width of A/B; 8 -> 5.3M trainable params (0.34%)
+  scale: 20.0                       # multiplier on the LoRA update (mlx's version of alpha/r)
+  dropout: 0.05                     # small regularisation, we only have 1000 examples
+
+# How much and how fast we learn
+batch_size: 2                       # 2 examples per step; more does not fit the time budget
+grad_accumulation_steps: 1
+iters: 300                          # 300 x 2 = 600 examples seen (~0.6 epoch)
+learning_rate: 5.0e-5               # higher than smoke (2e-5): smoke learned format but not the found decision
+lr_schedule:
+  name: cosine_decay                # big steps early, small steps at the end
+  warmup: 30                        # first 30 iters ramp lr up from ~0, avoids a shock to the model
+  warmup_init: 1.0e-7
+  arguments: [5.0e-5, 270, 5.0e-6]  # [peak lr, decay steps after warmup, final lr]
+
+# What the loss looks at and memory
+mask_prompt: true                   # loss only on the assistant JSON, not on the 700-token prompt
+grad_checkpoint: true               # recompute activations in backward pass: less memory, ~30% slower
+max_seq_length: 2048                # our longest example is 1389 tokens, so nothing is cut
+
+# Logging and checkpoints
+steps_per_report: 10                # print train loss every 10 iters
+steps_per_eval: 75                  # val loss at iters 1, 75, 150, 225, 300
+val_batches: 15                     # 30 valid examples per check (~55 s); full valid would cost ~4.5 min each
+save_every: 75                      # checkpoint every 75 iters, so we can pick an earlier one if it overfits

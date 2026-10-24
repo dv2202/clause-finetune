@@ -1,0 +1,32 @@
+# Continue LoRA v1 for 200 more iters (300 -> 500 total = 1 epoch over 1000 examples).
+# Why: on valid, recall kept rising 0.648 -> 0.803 -> 0.873 at iters 150/225/300, so the model was still learning.
+# Same settings as lora_v1.yaml except the lines marked CHANGED.
+model: mlx-community/Qwen2.5-1.5B-Instruct-4bit
+train: true
+data: data/processed
+resume_adapter_file: adapters/lora_v1/adapters.safetensors   # CHANGED: start from the iter-300 weights
+adapter_path: adapters/lora_v1_resume                        # CHANGED: new folder, iter-300 adapter stays untouched
+fine_tune_type: lora
+optimizer: adamw
+seed: 43                            # CHANGED: seed 42 would replay the exact same batch order as the first run
+num_layers: 16
+lora_parameters:
+  rank: 8
+  scale: 20.0
+  dropout: 0.05
+batch_size: 2
+grad_accumulation_steps: 1
+iters: 200                          # CHANGED: 200 more x 2 = 400 more examples
+learning_rate: 2.0e-5
+lr_schedule:
+  name: cosine_decay
+  warmup: 10                        # short warmup: Adam's memory is not saved, so it restarts from zero
+  warmup_init: 1.0e-7
+  arguments: [2.0e-5, 190, 2.0e-6]  # CHANGED: lower peak than 5e-5, the model is already close; big steps could undo it
+mask_prompt: true
+grad_checkpoint: true
+max_seq_length: 2048
+steps_per_report: 10
+steps_per_eval: 100
+val_batches: 15
+save_every: 50                      # checkpoints at 50/100/150/200 (= total iters 350/400/450/500)

@@ -134,3 +134,31 @@ A: They fail differently. A false positive quotes real contract text with the wr
 
 **Q: Few-shot improved precision. Why not stop there?**
 A: B1 raised precision from 0.51 to 0.67 but hallucination went up from 21.7% to 27.1%, because the model copied sentences from the few-shot examples into its answers, and latency rose 30% from the longer prompt. Fine-tuning puts the behaviour in the weights, so the prompt stays short and there are no examples to leak.
+
+## Phase 3: First fine-tune (LoRA v1)
+
+### What we did
+- Smoke test (`configs/smoke.yaml`, 100 train / 20 valid from `src/make_smoke_data.py`, 50 iters, lr 2e-5): memory fit, val loss 0.703 -> 0.055, ~8.6 s/iter (9m03s total). Log: `results/phase3_smoke_train.txt`.
+- Smoke adapter on 20 valid examples (`results/smoke_check.json`): valid JSON 100%, latency 1.31s, but it answered `found: false` on all 20 (12 gold positives missed, F1 0). Data was checked: 55 of 100 smoke targets are `found: true`.
+- Real run `configs/lora_v1.yaml`: 300 iters, batch 2 (600 examples, ~0.6 epoch), lr 5e-5 with 30-step warmup + cosine decay to 5e-6, rank 8, scale 20, dropout 0.05, top 16 of 28 layers, mask_prompt, grad checkpointing. Log: `results/phase3_lora_v1_train.txt`.
+- Wall time 54 min (11:40 -> 12:34, from adapter file timestamps), above the 48 min estimate: the fanless Air throttled (~10.5 s/iter incl. evals).
+- Val loss (30 shortest valid examples): iter 1 0.519, 75 0.048, 150 0.026, 225 0.026, 300 0.038. Checkpoints saved every 75 iters in `adapters/lora_v1/`.
+
+### Concepts
+- **LoRA**: freeze the base weights W, learn a low-rank update B·A (rank r) added to chosen linear layers. Trainable params per matrix = r × (d_in + d_out). Ours: 5.28M = 0.34% of the model.
+- **QLoRA-style**: the frozen base is 4-bit (small memory), the LoRA matrices train in normal precision.
+- **mask_prompt**: loss only on the assistant's JSON, so the model learns to answer, not to predict contract text.
+- **Loss is not the metric**: the found true/false decision is 1 token among ~50 answer tokens, so loss can be 0.05 while every decision is wrong (the smoke adapter). Only eval.py tells us task quality.
+- **Reading loss curves**: both falling = learning; train falling but val rising = overfitting (use an earlier checkpoint); both flat and high = underfitting. Our val went 0.026 -> 0.038 at the end: a small rise on only 30 examples, so possibly noise, possibly early overfit. Checkpoint 150/225 vs 300 is decided by eval.py on full valid in Phase 4.
+- **Warmup + cosine schedule**: ramp lr up so the first random-ish updates don't wreck the model, then decay so late steps make small refinements.
+- **Grad checkpointing**: don't store all activations, recompute them during backprop. Less memory, ~30% slower.
+
+### Interview Q&A
+**Q: Why LoRA instead of full fine-tuning?**
+A: Full fine-tuning of 1.5B params needs memory for the weights, gradients and Adam states (several times the model size) and creates a full model copy per task. LoRA trains 0.34% of the params, fits on a 16 GB laptop on top of a 4-bit base, and the adapter is a 21 MB file that can be swapped per task. For a narrow extraction task the low-rank update is enough.
+
+**Q: Your training loss was 0.05 after 20 steps. Was the model done?**
+A: No. The smoke test proved it: loss 0.055 but the model answered found=false on every example. Most answer tokens are format and copied text, which are easy, while the decision is one token. So I always run the task metric (eval.py) on checkpoints instead of trusting loss.
+
+**Q: How did you choose iterations and learning rate?**
+A: From the smoke test, not by guessing: it measured ~8.6 s/iter, so 300 iters fit the ~45 min budget. It also showed lr 2e-5 for 50 steps learned format but not the decision, so I raised it to 5e-5 with warmup and cosine decay, and saved checkpoints every 75 steps to pick the best by valid score.

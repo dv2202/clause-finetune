@@ -1,0 +1,25 @@
+# Smoke test: same settings as the real run, but 50 iters on 100 examples.
+# Goal: check memory fits, loss goes down, speed (it/sec) for the time estimate.
+model: mlx-community/Qwen2.5-1.5B-Instruct-4bit
+train: true
+data: data/smoke
+adapter_path: adapters/smoke
+fine_tune_type: lora
+optimizer: adamw
+seed: 42
+num_layers: 16
+lora_parameters:
+  rank: 8
+  scale: 20.0
+  dropout: 0.05
+batch_size: 2
+grad_accumulation_steps: 1
+iters: 50
+learning_rate: 2.0e-5
+mask_prompt: true
+grad_checkpoint: true
+max_seq_length: 2048
+steps_per_report: 5
+steps_per_eval: 25
+val_batches: 10
+save_every: 50
