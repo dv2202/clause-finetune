@@ -142,7 +142,7 @@ A: B1 raised precision from 0.51 to 0.67 but hallucination went up from 21.7% to
 - Smoke adapter on 20 valid examples (`results/smoke_check.json`): valid JSON 100%, latency 1.31s, but it answered `found: false` on all 20 (12 gold positives missed, F1 0). Data was checked: 55 of 100 smoke targets are `found: true`.
 - Real run `configs/lora_v1.yaml`: 300 iters, batch 2 (600 examples, ~0.6 epoch), lr 5e-5 with 30-step warmup + cosine decay to 5e-6, rank 8, scale 20, dropout 0.05, top 16 of 28 layers, mask_prompt, grad checkpointing. Log: `results/phase3_lora_v1_train.txt`.
 - Wall time 54 min (11:40 -> 12:34, from adapter file timestamps), above the 48 min estimate: the fanless Air throttled (~10.5 s/iter incl. evals).
-- Val loss (30 shortest valid examples): iter 1 0.519, 75 0.048, 150 0.026, 225 0.026, 300 0.038. Checkpoints saved every 75 iters in `adapters/lora_v1/`.
+- Val loss (a different random 30 valid examples at each check: mlx-lm shuffles val batches with no fixed seed, see `mlx_lm/tuner/trainer.py` evaluate + iterate_batches. Earlier I wrongly said "the 30 shortest"): iter 1 0.519, 75 0.048, 150 0.026, 225 0.026, 300 0.038. Checkpoints saved every 75 iters in `adapters/lora_v1/`.
 
 ### Concepts
 - **LoRA**: freeze the base weights W, learn a low-rank update B·A (rank r) added to chosen linear layers. Trainable params per matrix = r × (d_in + d_out). Ours: 5.28M = 0.34% of the model.
@@ -162,3 +162,103 @@ A: No. The smoke test proved it: loss 0.055 but the model answered found=false o
 
 **Q: How did you choose iterations and learning rate?**
 A: From the smoke test, not by guessing: it measured ~8.6 s/iter, so 300 iters fit the ~45 min budget. It also showed lr 2e-5 for 50 steps learned format but not the decision, so I raised it to 5e-5 with warmup and cosine decay, and saved checkpoints every 75 steps to pick the best by valid score.
+
+## Phase 4: Evaluate, analyse, iterate
+
+### Checkpoint results on full valid (146), from `results/summary.md`
+| run | valid JSON | P | R | F1 | span match | hallucination | latency |
+|---|---|---|---|---|---|---|---|
+| B0 zero-shot | 94.5% | 0.507 | 0.986 | 0.670 | 62.0% | 21.7% | 4.54s |
+| B1 few-shot | 96.6% | 0.667 | 0.901 | 0.766 | 60.6% | 27.1% | 5.89s |
+| FT1 it150 | 99.3% | 1.000 | 0.648 | 0.786 | 57.7% | 6.5% | 2.36s |
+| FT1 it225 | 100% | 1.000 | 0.803 | 0.891 | 67.6% | 5.3% | 2.13s |
+| **FT1 it300** | 100% | 1.000 | 0.873 | **0.932** | 66.2% | 8.1% | 2.11s |
+| FT1 it400 (resumed) | 100% | 1.000 | 0.577 | 0.732 | 47.9% | 4.9% | 3.31s |
+| FT1 it500 (resumed) | 100% | 0.982 | 0.789 | 0.875 | 69.0% | 12.3% | 3.40s |
+
+**Chosen adapter: FT1 it300 (`adapters/lora_v1`).** It passes 5 of 6 targets; span match 66.2% misses the 70% target.
+
+### Error analysis of it300 (26 failures, checked against raw outputs and CUAD spans)
+- 9 missed clauses (model too conservative: P=1.000, R=0.873), including short clean ones like "This Agreement may also be terminated by either party upon ninety (90) days written notice."
+- 12 wrong/partial spans: 2 stopped early at a newline or ":" (idx 2, 26), 1 returned a different valid CUAD span than our "longest span" label (idx 24), the rest copied a wrong or neighbouring sentence (idx 62: the counterparts sentence instead of the governing law sentence).
+- 5 hallucinations: all "stitching", i.e. two real pieces of the excerpt joined with words skipped in between (e.g. idx 31: 68 + 35 words). No invented words.
+
+### The one extra run: resume +200 iters (`configs/lora_v1_resume.yaml`)
+- Why: recall rose 0.648 -> 0.803 -> 0.873 at it150/225/300, so the model looked undertrained (0.6 epoch).
+- Result: worse. it400 recall fell to 0.577 (30 misses vs 9), it500 recovered to 0.789 but hallucination rose to 12.3% (above the 10% target). Kept it300.
+- Likely causes (not separated by an experiment): Adam's state was not saved, so it restarted from zero, and the lr jumped back up to 2e-5 after the first run had decayed to 5e-6. That knocks a model that is already in a good spot. A fresh 500-iter run with one schedule would be the clean test.
+- Latency 3.3-3.4s on resumed runs is the laptop being slower, not longer answers: outputs were shorter (133-159 vs 183 chars) but ms per char doubled (11.5 -> 21-25). The fanless Air throttles after long runs, so latency is noisy across runs.
+- Val loss during this run (0.016 / 0.023 / 0.030) was on a different random 30 examples each check, so it could not show the drop. Only the full eval did.
+
+### Concepts
+- **Pick checkpoints by the task metric on the full valid set**, never by loss: it150 and it225 had the best val loss, it300 had the best F1.
+- **"More training" is a hypothesis, not a rule**: the recall trend suggested it, the eval rejected it. A failed run is still a result; we keep the better adapter.
+- **Resuming is not the same as training longer**: weights carry over, but optimizer state, lr schedule and data order restart unless you save and restore them.
+- **Small eval sets are noisy**: 71 positives, so one miss = 1.4 points of recall. 9 vs 30 misses is a real change; 9 vs 11 might not be.
+
+### Interview Q&A
+**Q: Your model was still improving at step 300. You trained more and it got worse. Why, and what did you do?**
+A: Resuming restarted Adam's statistics and pushed the learning rate back up after it had decayed, which disturbed a model that was already near a good point; recall dropped from 0.873 to 0.577 at step 400. I didn't trust loss to tell me this; I evaluated every checkpoint on the full valid set and kept step 300. The clean way to test "more training" is one fresh run with a single longer schedule.
+
+**Q: How do you do error analysis on an extraction model?**
+A: Bucket every failure mechanically (invalid JSON, hallucinated, false positive, missed, wrong span), then check the root cause of each bucket against the raw output and the source labels. For us that showed hallucinations were all "stitching" of real text, and some "wrong spans" were actually other valid expert spans, which is a labelling choice, not a model error.
+
+**Q: Precision is 1.000. Is that suspicious?**
+A: It means 0 false positives out of 75 negatives, so whenever the model says "found" it's right. The cost is recall (0.873): it misses some clauses. For a legal review tool that's a reasonable trade, since a missed clause can be caught by a reviewer, while a wrong one wastes trust. But with only 75 negatives, the true precision on new data will likely be a bit lower, which the frozen test set will show.
+
+## Phase 5: Final test (run once)
+
+Adapter: `adapters/final_it300` (sha256 in `results/final_adapter.json`). Each run below was done once; nothing was changed after seeing these numbers. (A first attempt was stopped by hand at 70/194 before any metrics were printed or saved.)
+
+### Test (194 examples, 37 contracts never used for training or any decision)
+| run | valid JSON | P | R | F1 | span match | hallucination | latency | tp/fp/fn |
+|---|---|---|---|---|---|---|---|---|
+| B0 base, zero-shot | 92.8% | 0.506 | 0.968 | 0.664 | 56.4% | 21.7% | 3.10s | 91/89/3 |
+| B1 base, few-shot | 92.3% | 0.675 | 0.819 | 0.740 | 56.4% | 24.6% | 5.68s | 77/37/17 |
+| **FT it300, zero-shot** | **99.5%** | **0.930** | **0.851** | **0.889** | **68.1%** | **2.3%** | **2.81s** | 80/6/14 |
+
+Per clause type F1 on test, FT vs B1: Governing Law 0.947 vs 0.727, Termination For Convenience 0.919 vs 0.750, Non-Compete 0.815 vs 0.583, Cap On Liability 0.800 vs 0.700, Anti-Assignment 0.947 vs 0.878.
+
+### Golden (60 balanced examples, a subset of test; labels reviewed by Claude, not by a human)
+| run | valid JSON | P | R | F1 | span match | hallucination | latency |
+|---|---|---|---|---|---|---|---|
+| B1 base, few-shot | 85.0% | 0.639 | 0.767 | 0.697 | 46.7% | 27.8% | 5.27s |
+| **FT it300** | **100%** | 0.964 | 0.900 | **0.931** | **76.7%** | **0.0%** | 3.43s |
+
+### Targets (set in Phase 2) on test
+valid JSON 99.5% (>= 99%) pass; precision 0.930 (>= 0.80) pass; F1 0.889 (>= 0.85) pass; hallucination 2.3% (<= 10%) pass; latency 2.81s (< B1) pass; span match 68.1% (>= 70%) **miss**.
+
+### Forgetting check (`results/phase5_general_check.json`)
+5 general prompts (summarise, capital of Japan, polite email, explain an NDA to a child, three red fruits): the fine-tuned answers are normal prose and almost the same as the base model's. No JSON leaked into general answers.
+
+### Notes
+- Test F1 (0.889) is below valid F1 (0.932), as expected: we picked the checkpoint on valid, so valid is slightly optimistic. Precision fell from 1.000 on valid to 0.930 on test (6 false positives), which shows the valid 1.000 came from a small sample of 75 negatives.
+- Latency differs between runs on this fanless laptop (it throttles), so compare latency within the same session only. FT vs B1 on test ran back to back.
+- B0 has the highest recall (0.968) because it says "found" for almost everything (89 false positives), which is why recall alone is a misleading metric.
+
+### Concepts
+- **Test set, run once**: the only number that was not used for any choice. Re-running after changes turns it into a second valid set.
+- **Same exam for the comparison**: baselines are re-run on test so before/after compares the same examples. Running baselines on test is fine, as nothing about them is tuned on it.
+- **Catastrophic forgetting**: narrow fine-tuning can overwrite general skills; LoRA on a small number of steps keeps the base weights frozen, which limits it, but you still check.
+
+### Interview Q&A
+**Q: What are your final results, and how do you know they're honest?**
+A: On a held-out test set of 194 examples from 37 contracts that were never used for training or any decision, F1 went from 0.740 (best prompting) to 0.889, hallucination from 24.6% to 2.3%, valid JSON from 92.3% to 99.5%, and latency halved. The split is by contract and asserted in code, targets were written before training, and the test set was run once.
+
+**Q: Why is the test score lower than validation?**
+A: I chose the checkpoint on validation, so validation is slightly optimistic, which is selection bias. Test is the unbiased estimate. Precision fell from 1.000 to 0.930 because the validation set had only 75 negatives.
+
+**Q: Did fine-tuning hurt the model's general abilities?**
+A: I spot-checked 5 general prompts against the base model: the answers were nearly identical, and no JSON leaked into normal answers. That's a smoke check, not a benchmark; for production I'd run a small general benchmark too.
+
+## Phase 6: Package and demo
+
+### Step 1: Fuse, then re-check (it failed at first)
+- `mlx_lm.fuse` into the 4-bit base (`models/clausefinder-fused`, 828 MB) changed the model: on test, F1 0.889 -> 0.756, precision 0.930 -> 0.625, hallucination 2.3% -> 10.4% (`results/FINAL_FUSED_test.json`). 92 of 194 raw outputs changed, 58 found decisions flipped, almost all to found=true, i.e. back toward base-model behaviour.
+- Cause: fuse adds scale·B·A to the weights and then re-quantizes to 4 bits. The LoRA update is small compared with one 4-bit step, so much of it is rounded away.
+- Check (40 valid examples, compared output by output with the base+adapter run `FT1_it300`):
+  - `--dequantize` fused model (`models/clausefinder-fused-fp16`, 2.9 GB): 40/40 identical outputs, 0 flips. Fusing itself is lossless.
+  - 4-bit fused model: 19/40 identical, 11 found decisions flipped.
+- Decision: deploy base 4-bit + adapter (the verified setup: 828 MB + 20 MB, fastest). The fp16 fused model is the "one folder" option if needed. The 4-bit fused model is not used.
+- Lesson: always re-run eval after any conversion step (fuse, quantize, export). "Should be the same" is a hypothesis.
+- Fix for a small fused model in future: fuse into a 16-bit base and then quantize with a calibration-aware method, or train LoRA on the 16-bit model; plain re-quantizing after fuse is lossy.

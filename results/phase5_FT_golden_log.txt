@@ -1,0 +1,13 @@
+[10/60] 39s elapsed, ~195s left
+[20/60] 71s elapsed, ~142s left
+[30/60] 113s elapsed, ~113s left
+[40/60] 144s elapsed, ~72s left
+[50/60] 176s elapsed, ~35s left
+[60/60] 206s elapsed, ~0s left
+
+FINAL_FT_golden on golden (n=60): valid_json=100.0% P=0.964 R=0.900 F1=0.931 span_match=76.7% halluc=0.0% latency=3.43s
+  Governing Law                F1=1.000 P=1.000 R=1.000 span=100.0% halluc=0.0%
+  Termination For Convenience  F1=1.000 P=1.000 R=1.000 span=50.0% halluc=0.0%
+  Non-Compete                  F1=0.800 P=1.000 R=0.667 span=66.7% halluc=0.0%
+  Cap On Liability             F1=0.833 P=0.833 R=0.833 span=66.7% halluc=0.0%
+  Anti-Assignment              F1=1.000 P=1.000 R=1.000 span=100.0% halluc=0.0%

@@ -1,0 +1,31 @@
+{
+  "created": "2026-10-24 16:54:37",
+  "adapter": "adapters/final_it300",
+  "rows": [
+    {
+      "prompt": "Summarise this paragraph in one sentence: The supplier shall deliver the goods within 30 days of the purchase order. If delivery is late, the buyer may cancel the order and receive a full refund.",
+      "base": "The supplier must deliver goods within 30 days of receiving the purchase order, or the buyer can cancel the order and receive a full refund if the delivery is delayed.",
+      "finetuned": "The supplier must deliver the goods within 30 days of the purchase order, or the buyer can cancel the order and receive a full refund if delivery is delayed."
+    },
+    {
+      "prompt": "What is the capital of Japan? Answer in one word.",
+      "base": "Tokyo",
+      "finetuned": "Tokyo"
+    },
+    {
+      "prompt": "Write a short polite email asking a colleague to review my report by Friday.",
+      "base": "Subject: Request for Review of Report\nDear [Colleague's Name],\nI hope this email finds you well. I am writing to request your review of my recent report. The report is due by Friday, [Date], and I would greatly appreciate your assistance in this matter. Your feedback will be invaluable to me as I continue to refine my work.\nThank you for your time and consideration.\nBest regards, [Your Name]",
+      "finetuned": "Subject: Request for Review of My Report by Friday\nDear [Colleague's Name],\nI hope this email finds you well. I am writing to request your review of my report on [Report Name] by Friday, [Date]. I have completed the report and would greatly appreciate your feedback on its content, clarity, and overall quality.\nYour insights and feedback will be invaluable in helping me improve the report and ensure that it meets the necessary standards. Please let me know if you have any questions or need further information.\nThank you for your time and consideration.\nBest regards,\n[Your Name]"
+    },
+    {
+      "prompt": "Explain what a non-disclosure agreement is to a 10-year-old, in 2 sentences.",
+      "base": "A non-disclosure agreement is like a promise to keep something secret. It's when grown-ups agree not to tell others about something important, to protect it from being shared.",
+      "finetuned": "A non-disclosure agreement is like a promise to keep something secret. It's a special agreement between people or organizations to not share information that they shouldn't. It's like when you promise not to tell your friend about their secret."
+    },
+    {
+      "prompt": "List three fruits that are red.",
+      "base": "Three fruits that are red are strawberries, cherries, and cranberries.",
+      "finetuned": "Three fruits that are red are strawberries, cherries, and pomegranates."
+    }
+  ]
+}

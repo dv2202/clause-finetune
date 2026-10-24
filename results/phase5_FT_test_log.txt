@@ -1,0 +1,27 @@
+[10/194] 22s elapsed, ~401s left
+[20/194] 54s elapsed, ~468s left
+[30/194] 69s elapsed, ~379s left
+[40/194] 87s elapsed, ~334s left
+[50/194] 101s elapsed, ~292s left
+[60/194] 118s elapsed, ~265s left
+[70/194] 143s elapsed, ~253s left
+[80/194] 190s elapsed, ~271s left
+[90/194] 222s elapsed, ~256s left
+[100/194] 250s elapsed, ~235s left
+[110/194] 291s elapsed, ~222s left
+[120/194] 319s elapsed, ~197s left
+[130/194] 346s elapsed, ~170s left
+[140/194] 381s elapsed, ~147s left
+[150/194] 409s elapsed, ~120s left
+[160/194] 440s elapsed, ~94s left
+[170/194] 473s elapsed, ~67s left
+[180/194] 502s elapsed, ~39s left
+[190/194] 531s elapsed, ~11s left
+[194/194] 545s elapsed, ~0s left
+
+FINAL_FT_test on test (n=194): valid_json=99.5% P=0.930 R=0.851 F1=0.889 span_match=68.1% halluc=2.3% latency=2.81s
+  Governing Law                F1=0.947 P=1.000 R=0.900 span=85.0% halluc=5.6%
+  Termination For Convenience  F1=0.919 P=1.000 R=0.850 span=55.0% halluc=5.9%
+  Non-Compete                  F1=0.815 P=0.846 R=0.786 span=57.1% halluc=0.0%
+  Cap On Liability             F1=0.800 P=0.800 R=0.800 span=55.0% halluc=0.0%
+  Anti-Assignment              F1=0.947 P=1.000 R=0.900 span=85.0% halluc=0.0%

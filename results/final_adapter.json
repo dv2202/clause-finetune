@@ -1,0 +1,11 @@
+{
+  "chosen": "FT1_it300",
+  "why": "Best F1 on full valid (0.932) among checkpoints it150/225/300/400/500; see results/summary.md",
+  "adapter_dir": "adapters/final_it300",
+  "source": "adapters/lora_v1/0000300_adapters.safetensors (iter 300 of configs/lora_v1.yaml)",
+  "sha256": "dc65217e0753a397cbd7835f91cf08cc168f75380aebd2e6d4d0dd650bb54891",
+  "base_model": "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
+  "train_config": "configs/lora_v1.yaml",
+  "valid_eval": "results/FT1_it300.json",
+  "chosen_on": "2026-10-24"
+}

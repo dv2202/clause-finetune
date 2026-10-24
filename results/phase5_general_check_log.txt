@@ -1,0 +1,42 @@
+
+=== [base] Summarise this paragraph in one sentence: The supplier shall deliver t
+The supplier must deliver goods within 30 days of receiving the purchase order, or the buyer can cancel the order and receive a full refund if the delivery is delayed.
+
+=== [base] What is the capital of Japan? Answer in one word.
+Tokyo
+
+=== [base] Write a short polite email asking a colleague to review my report by F
+Subject: Request for Review of Report
+Dear [Colleague's Name],
+I hope this email finds you well. I am writing to request your review of my recent report. The report is due by Friday, [Date], and I would greatly appreciate your assistance in this matter. Your feedback will be invaluable to me as I continue to refine my work.
+Thank you for your time and consideration.
+Best regards, [Your Name]
+
+=== [base] Explain what a non-disclosure agreement is to a 10-year-old, in 2 sent
+A non-disclosure agreement is like a promise to keep something secret. It's when grown-ups agree not to tell others about something important, to protect it from being shared.
+
+=== [base] List three fruits that are red.
+Three fruits that are red are strawberries, cherries, and cranberries.
+
+=== [finetuned] Summarise this paragraph in one sentence: The supplier shall deliver t
+The supplier must deliver the goods within 30 days of the purchase order, or the buyer can cancel the order and receive a full refund if delivery is delayed.
+
+=== [finetuned] What is the capital of Japan? Answer in one word.
+Tokyo
+
+=== [finetuned] Write a short polite email asking a colleague to review my report by F
+Subject: Request for Review of My Report by Friday
+Dear [Colleague's Name],
+I hope this email finds you well. I am writing to request your review of my report on [Report Name] by Friday, [Date]. I have completed the report and would greatly appreciate your feedback on its content, clarity, and overall quality.
+Your insights and feedback will be invaluable in helping me improve the report and ensure that it meets the necessary standards. Please let me know if you have any questions or need further information.
+Thank you for your time and consideration.
+Best regards,
+[Your Name]
+
+=== [finetuned] Explain what a non-disclosure agreement is to a 10-year-old, in 2 sent
+A non-disclosure agreement is like a promise to keep something secret. It's a special agreement between people or organizations to not share information that they shouldn't. It's like when you promise not to tell your friend about their secret.
+
+=== [finetuned] List three fruits that are red.
+Three fruits that are red are strawberries, cherries, and pomegranates.
+
+saved results/phase5_general_check.json
