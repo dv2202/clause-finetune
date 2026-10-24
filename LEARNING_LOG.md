@@ -82,3 +82,55 @@ A: Three layers: skip ambiguous chunks automatically (span cut by a boundary), a
 
 **Q: Why did you normalise whitespace?**
 A: CUAD text has long runs of spaces from PDF extraction. They waste tokens, and the task is exact copying, so the model would have to reproduce random spacing. We collapsed whitespace and kept an offset map so gold spans still point to the exact text, then asserted every positive's text is a substring of its excerpt.
+
+---
+
+## Phase 2: Eval harness + baselines
+
+### What was done
+- `src/eval.py`: our own harness. Greedy decoding (temp 0), strict Pydantic parse of the whole output, metrics overall + per clause type, saves `results/<run>.json` (config + metrics + every prediction) and rebuilds `results/summary.md`.
+- `src/show_failures.py` (failure buckets) and `src/inspect_pred.py` (trace one prediction back to the excerpt, our label and CUAD's raw expert spans, and recompute every check).
+- `src/prompts.py` got the B1 few-shot variant: stricter rules + 3 hand-written examples (not from CUAD, so no eval leakage). Training data keeps the plain prompt.
+
+### Metric definitions
+- **valid JSON**: whole stripped output parses into the schema, and found/text agree (found=true needs text, found=false needs null). Invalid output counts as found=false.
+- **precision / recall / F1** on `found`.
+- **span match**: of all gold positives, share where the model found the clause AND token-overlap F1 with the gold text >= 0.5.
+- **hallucination rate**: of the model's found=true answers, share whose text (whitespace-collapsed) is not a substring of the excerpt. Narrow on purpose: fabricated text. A real sentence with the wrong label is a false positive (precision), not a hallucination.
+
+### Baselines on valid (n=146), from `results/summary.md`
+| run | valid JSON | precision | recall | F1 | span match | hallucination | latency |
+|---|---|---|---|---|---|---|---|
+| B0 zero-shot | 94.5% | 0.507 | 0.986 | 0.670 | 62.0% | 21.7% | 4.54s |
+| B1 few-shot | 96.6% | 0.667 | 0.901 | 0.766 | 60.6% | 27.1% | 5.89s |
+
+### Failure analysis (B1, checkpoint 2026-10-24)
+B1 failure buckets (first matching rule wins): 26 hallucinated text, 20 false positive, 15 wrong/partial span, 5 missed, 5 invalid JSON (71 of 146).
+- **Hallucination patterns**: (1) copying the few-shot examples' sentences into answers (Governing Law hallucination rose from 16.7% in B0 to 36.7% in B1); (2) meaning flips ("may not be assigned" became "may be assigned"); (3) drift while copying long clauses (e.g. `[***]` rewritten as `[X]`).
+- **False positives**: keyword traps, e.g. "Termination for Material Breach" labelled as Termination For Convenience, or a termination-for-cause clause returned for Cap On Liability.
+- **Invalid JSON** (checked against the raw outputs, not guessed): unescaped `"` inside the copied text (9 of 13 across B0+B1), a raw newline inside the string (2), clause_type outside the allowed list (2, B0 only). None hit the 800-token limit (max 473).
+- Takeaway: prompting improves precision but makes hallucination worse and costs latency. Training data written with `json.dumps` teaches proper `\"` and `\n` escaping.
+
+### Targets for "done" (locked before any training, valid split, fine-tuned model)
+- valid JSON >= 99%
+- precision >= 0.80
+- F1 >= 0.85
+- span match >= 70%
+- hallucination <= 10%
+- latency < B1 (5.89s)
+
+### Concepts
+- **Precision vs recall vs F1**: precision = of the clauses we claimed, how many were right; recall = of the real clauses, how many we found; F1 = harmonic mean, low if either is low.
+- **Gold vs pred vs golden**: gold = the correct label; pred = the model's answer; golden.jsonl = the 60-example hand-check file (Phase 5 only).
+- **Why baselines first**: without "before" numbers, "the fine-tune helped" is a feeling. B1 is the bar to beat, because it's the cheapest strong alternative.
+- **Why targets are written before training**: so we can't move the goalposts after seeing results.
+
+### Interview Q&A
+**Q: Why write your own eval script instead of using a platform?**
+A: We have ground-truth labels and a fixed output schema, so evaluation is deterministic code: parse, compare, count. A 200-line script is transparent, versioned with the repo, and every number can be traced to a prediction (we built `inspect_pred.py` for exactly that).
+
+**Q: Why is hallucination rate tracked separately from precision?**
+A: They fail differently. A false positive quotes real contract text with the wrong label, so a lawyer can find it with Ctrl+F and catch the mistake. A hallucination quotes text that doesn't exist, sometimes with flipped meaning ("may not" became "may"), and that error is invisible unless someone checks. In legal work that's the most dangerous failure, so it gets its own metric and target.
+
+**Q: Few-shot improved precision. Why not stop there?**
+A: B1 raised precision from 0.51 to 0.67 but hallucination went up from 21.7% to 27.1%, because the model copied sentences from the few-shot examples into its answers, and latency rose 30% from the longer prompt. Fine-tuning puts the behaviour in the weights, so the prompt stays short and there are no examples to leak.

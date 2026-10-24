@@ -1,0 +1,44 @@
+[10/146] 50s elapsed, ~677s left
+[20/146] 116s elapsed, ~731s left
+[30/146] 157s elapsed, ~607s left
+[40/146] 196s elapsed, ~521s left
+[50/146] 236s elapsed, ~453s left
+[60/146] 285s elapsed, ~409s left
+[70/146] 313s elapsed, ~340s left
+[80/146] 370s elapsed, ~305s left
+[90/146] 416s elapsed, ~259s left
+[100/146] 461s elapsed, ~212s left
+[110/146] 490s elapsed, ~160s left
+[120/146] 529s elapsed, ~115s left
+[130/146] 593s elapsed, ~73s left
+[140/146] 639s elapsed, ~27s left
+[146/146] 664s elapsed, ~0s left
+
+B0_zero_shot on valid (n=146): valid_json=94.5% P=0.507 R=0.986 F1=0.670 span_match=62.0% halluc=21.7% latency=4.54s
+  Governing Law                F1=0.667 P=0.500 R=1.000 span=66.7% halluc=16.7%
+  Termination For Convenience  F1=0.683 P=0.538 R=0.933 span=46.7% halluc=11.5%
+  Non-Compete                  F1=0.629 P=0.458 R=1.000 span=54.5% halluc=29.2%
+  Cap On Liability             F1=0.682 P=0.517 R=1.000 span=73.3% halluc=6.9%
+  Anti-Assignment              F1=0.682 P=0.517 R=1.000 span=66.7% halluc=44.8%
+[10/146] 51s elapsed, ~691s left
+[20/146] 125s elapsed, ~785s left
+[30/146] 198s elapsed, ~764s left
+[40/146] 247s elapsed, ~656s left
+[50/146] 299s elapsed, ~575s left
+[60/146] 388s elapsed, ~556s left
+[70/146] 442s elapsed, ~480s left
+[80/146] 526s elapsed, ~434s left
+[90/146] 617s elapsed, ~384s left
+[100/146] 670s elapsed, ~308s left
+[110/146] 719s elapsed, ~235s left
+[120/146] 767s elapsed, ~166s left
+[130/146] 801s elapsed, ~99s left
+[140/146] 831s elapsed, ~36s left
+[146/146] 860s elapsed, ~0s left
+
+B1_few_shot on valid (n=146): valid_json=96.6% P=0.667 R=0.901 F1=0.766 span_match=60.6% halluc=27.1% latency=5.89s
+  Governing Law                F1=0.667 P=0.500 R=1.000 span=93.3% halluc=36.7%
+  Termination For Convenience  F1=0.737 P=0.609 R=0.933 span=53.3% halluc=8.7%
+  Non-Compete                  F1=0.870 P=0.833 R=0.909 span=45.5% halluc=33.3%
+  Cap On Liability             F1=0.800 P=0.800 R=0.800 span=53.3% halluc=20.0%
+  Anti-Assignment              F1=0.839 P=0.812 R=0.867 span=53.3% halluc=37.5%

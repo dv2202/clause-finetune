@@ -42,12 +42,71 @@ def build_user_prompt(clause_type: str, excerpt: str) -> str:
     )
 
 
-def build_messages(clause_type: str, excerpt: str) -> list[dict]:
-    """Chat messages WITHOUT the answer: used for inference (eval + demo)."""
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": build_user_prompt(clause_type, excerpt)},
-    ]
+def build_messages(clause_type: str, excerpt: str, few_shot: bool = False) -> list[dict]:
+    """Chat messages WITHOUT the answer: used for inference (eval + demo).
+
+    few_shot=True is baseline B1: stricter rules + 3 worked examples as earlier
+    chat turns. Training data always uses the plain (zero-shot) version.
+    """
+    if not few_shot:
+        return [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": build_user_prompt(clause_type, excerpt)},
+        ]
+    messages = [{"role": "system", "content": SYSTEM_PROMPT + STRICT_RULES}]
+    for ex_type, ex_excerpt, ex_text in FEW_SHOT_EXAMPLES:
+        messages.append({"role": "user", "content": build_user_prompt(ex_type, ex_excerpt)})
+        messages.append({"role": "assistant", "content": build_target(ex_type, ex_text)})
+    messages.append({"role": "user", "content": build_user_prompt(clause_type, excerpt)})
+    return messages
+
+
+# ---------- baseline B1 (few-shot) only ----------
+
+STRICT_RULES = (
+    "\nRules:\n"
+    "1. Set found to true ONLY if the excerpt contains a clause that matches the definition. "
+    "Mentioning a related word (e.g. 'terminate', 'assign', 'liability') is not enough.\n"
+    "2. When found is true, copy the COMPLETE clause sentence(s) character for character. "
+    "Do not shorten, paraphrase or fix typos.\n"
+    "3. If you are unsure, set found to false and text to null.\n"
+    "4. Output only the JSON object: no markdown, no explanation."
+)
+
+# Hand-written (not from CUAD), so no eval data leaks into the prompt.
+# One positive, one hard negative, one positive with a long clause.
+FEW_SHOT_EXAMPLES = [
+    (
+        "Governing Law",
+        "9. Notices. All notices shall be sent by courier to the addresses above.\n\n"
+        "10. Governing Law. This Agreement shall be governed by and construed in accordance with "
+        "the laws of the State of New York, without giving effect to its conflict of laws rules.\n\n"
+        "11. Counterparts. This Agreement may be executed in counterparts.",
+        "This Agreement shall be governed by and construed in accordance with the laws of the State "
+        "of New York, without giving effect to its conflict of laws rules.",
+    ),
+    (
+        "Anti-Assignment",
+        "5. Successors. This Agreement shall bind and benefit the parties and their successors.\n\n"
+        "6. Term. This Agreement starts on the Effective Date and lasts three (3) years, unless "
+        "terminated earlier for material breach on thirty (30) days' written notice.",
+        None,
+    ),
+    (
+        "Cap On Liability",
+        "12. Limitation of Liability. IN NO EVENT SHALL EITHER PARTY'S TOTAL LIABILITY ARISING OUT "
+        "OF THIS AGREEMENT EXCEED THE FEES PAID BY CUSTOMER IN THE TWELVE (12) MONTHS PRECEDING THE "
+        "CLAIM.\n\n13. Insurance. Supplier shall maintain general liability insurance of at least "
+        "$1,000,000 per occurrence.",
+        "IN NO EVENT SHALL EITHER PARTY'S TOTAL LIABILITY ARISING OUT OF THIS AGREEMENT EXCEED THE "
+        "FEES PAID BY CUSTOMER IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM.",
+    ),
+]
+
+
+def parse_excerpt(user_content: str) -> str:
+    """Recover the excerpt from a user prompt (eval reads it back from the JSONL)."""
+    return user_content.split('Excerpt:\n"""\n', 1)[1].rsplit('\n"""', 1)[0]
 
 
 def build_target(clause_type: str, text: str | None) -> str:
