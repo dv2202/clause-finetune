@@ -1,0 +1,10 @@
+Governing Law                positives 170 (v1 100 + new 70)  new negatives 70 (35 hard)
+Termination For Convenience  positives 166 (v1 100 + new 66)  new negatives 66 (33 hard)
+Non-Compete                  positives 137 (v1 100 + new 37)  new negatives 37 (18 hard)
+Cap On Liability             positives 170 (v1 100 + new 70)  new negatives 70 (35 hard)
+Anti-Assignment              positives 170 (v1 100 + new 70)  new negatives 70 (35 hard)
+
+train v2: n=1626 pos=813 neg=813 hard_neg=406 (50% of neg) contracts=319
+valid sha256 a52a985b64a2cdce  test sha256 6a820ce3cfe93ded  (identical to v1)
+checks passed: v1 subset, exact spans, no leakage, no duplicates
+tokens p50 760 p95 987 max 1536

@@ -1,0 +1,35 @@
+# ClauseFinder LoRA run v2. ONE change vs v1: more training data (data/processed_v2, 1626 examples
+# = v1's 1000 + 626 more from the same train contracts). Steps are scaled so each example is seen
+# about as often as in v1 (~0.6 epoch); warmup and decay are scaled with them. Everything else = v1.
+model: mlx-community/Qwen2.5-1.5B-Instruct-4bit
+train: true
+data: data/processed_v2             # train.jsonl (1626) + valid.jsonl (identical to v1's)
+adapter_path: adapters/lora_v2      # new folder: adapters/final_it300 (v1) is never touched
+fine_tune_type: lora
+optimizer: adamw
+seed: 42
+
+num_layers: 16
+lora_parameters:
+  rank: 8
+  scale: 20.0
+  dropout: 0.05
+
+batch_size: 2
+grad_accumulation_steps: 1
+iters: 480                          # 480 x 2 = 960 examples seen = 0.59 epoch (v1: 600/1000 = 0.6)
+learning_rate: 5.0e-5
+lr_schedule:
+  name: cosine_decay
+  warmup: 48                        # 10% of iters, same share as v1 (30/300)
+  warmup_init: 1.0e-7
+  arguments: [5.0e-5, 432, 5.0e-6]  # [peak lr, decay steps after warmup, final lr]
+
+mask_prompt: true
+grad_checkpoint: true
+max_seq_length: 2048                # longest v2 example is 1536 tokens, so nothing is cut
+
+steps_per_report: 10
+steps_per_eval: 120                 # val loss at iters 1, 120, 240, 360, 480
+val_batches: 15
+save_every: 120                     # checkpoints at 120/240/360/480 to pick from on valid

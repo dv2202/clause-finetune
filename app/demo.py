@@ -128,7 +128,7 @@ def main():
         print(f"saved {args.out}")
 
 
-ICONS = {"VERIFIED": "[OK]    ", "NEEDS_REVIEW": "[REVIEW]", "BLOCKED": "[BLOCKED]", "INVALID_OUTPUT": "[INVALID]"}
+ICONS = {"VERIFIED": "[IN DOC]    ", "NEEDS_REVIEW": "[REVIEW]", "BLOCKED": "[BLOCKED]", "INVALID_OUTPUT": "[INVALID]"}
 
 
 def print_type(clause_type: str, r: dict):
