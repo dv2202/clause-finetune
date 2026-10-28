@@ -1,0 +1,27 @@
+app/samples/tuniu_cooperation_agreement.txt: 2760 words -> 7 chunks
+
+=== Governing Law  (read chunks [4, 0, 5])
+  [IN DOC]     chunk 4  chars 11146-11523
+    This Agreement shall be governed by and interpreted pursuant to the laws of the People's Republic of China that are promulgated and are publicly available, provided that the general international business practices shall apply if the laws of the People's Republic of China that are promulgated and ar
+
+=== Termination For Convenience  (read chunks [3, 2, 4])
+  [IN DOC]     chunk 3  chars 7268-7478
+    Party B shall have the right to terminate this Agreement in advance without the prior written consent from Party A, bysending a written notice to Party A but Party A may not terminate or rescind this Agreement;
+  [IN DOC]     chunk 2  chars 7121-7478
+    Prior to the expiration of the Term of Cooperation , this Agreement shall only be terminated upon occurrence of the followingcircumstances:
+
+6.1.1 Party B shall have the right to terminate this Agreement in advance without the prior written consent from Party A, bysending a written notice to Party A
+
+=== Non-Compete  (read chunks [1])
+  [IN DOC]     chunk 1  chars 3574-4008
+    Party A irrevocably undertakes that, without Party B's consent, Party A shall not conduct any other business or make any commercial arrangement, including without limitation being engaged in or otherwise participating in any commercial activities and businesses independently or together with any oth
+
+=== Cap On Liability  (read chunks [4, 2, 0])
+  not found
+
+=== Anti-Assignment  (read chunks [5, 0])
+  [IN DOC]     chunk 5  chars 13885-14026
+    The rights and obligations of each Party under this Agreement shall not be transferred, except for the transfer by Party B to its affiliates.
+
+12 model calls in 20s (1.7s per call)
+saved results/phase6b_demo_tuniu_v2.json

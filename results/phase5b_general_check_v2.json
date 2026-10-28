@@ -1,0 +1,32 @@
+{
+  "created": "2026-10-28 12:02:42",
+  "adapter": "adapters/final_v2_it480",
+  "repetition_penalty": 1.05,
+  "rows": [
+    {
+      "prompt": "Summarise this paragraph in one sentence: The supplier shall deliver the goods within 30 days of the purchase order. If delivery is late, the buyer may cancel the order and receive a full refund.",
+      "base": "The supplier must deliver goods within 30 days of receiving the purchase order, or the buyer can cancel the order and receive a full refund if delivery is delayed.",
+      "finetuned": "The supplier must deliver goods within 30 days of receiving the purchase order, or the buyer can cancel the order and receive a full refund if delivery is delayed."
+    },
+    {
+      "prompt": "What is the capital of Japan? Answer in one word.",
+      "base": "Tokyo",
+      "finetuned": "Tokyo"
+    },
+    {
+      "prompt": "Write a short polite email asking a colleague to review my report by Friday.",
+      "base": "Subject: Request for Review of Report\n\nDear [Colleague's Name],\n\nI hope this email finds you well. I am writing to request your review of my recent report on [briefly describe the report's purpose or content]. I would greatly appreciate your feedback as it will be invaluable for our upcoming project.\n\nPlease review the report by Friday, [insert date], and let me know your thoughts. Your insights will be crucial in helping us make informed decisions.\n\nThank you for your time and consideration. I look forward to your response.\n\nBest regards,\n\n[Your Name]",
+      "finetuned": "Subject: Request for Review of Report\n\nDear [Colleague's Name],\n\nI hope this email finds you well. I am writing to request your review of my recent report on [briefly describe the report's purpose or content]. As we are approaching the deadline of Friday, I would greatly appreciate your availability to review it.\n\nPlease let me know if you are able to review the report by Friday. If not, I would be grateful for your availability to review it on another date.\n\nThank you for your time and consideration. I look forward to hearing from you soon.\n\nBest regards,\n\n[Your Name]"
+    },
+    {
+      "prompt": "Explain what a non-disclosure agreement is to a 10-year-old, in 2 sentences.",
+      "base": "A non-disclosure agreement is like a promise to keep something secret. It's when grown-ups agree not to tell others about something important, so they can't use it without permission. It's like a special rule to protect something that belongs to someone else.",
+      "finetuned": "A non-disclosure agreement is like a promise to keep something secret. It's when grown-ups agree not to tell others about something they've shared, just like you wouldn't tell your friend what's in your lunchbox."
+    },
+    {
+      "prompt": "List three fruits that are red.",
+      "base": "Three fruits that are red are strawberries, cherries, and cranberries.",
+      "finetuned": "Three fruits that are red are strawberries, apples, and cherries."
+    }
+  ]
+}

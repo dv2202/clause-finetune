@@ -8,7 +8,7 @@ Fine-tuning a small open model (Qwen2.5-1.5B-Instruct, 4-bit) with LoRA to find 
 {"clause_type": "Governing Law", "found": true, "text": "This Agreement shall be governed by and interpreted pursuant to the laws of the People's Republic of China ..."}
 ```
 
-**Result on a held-out test set (194 examples from 37 contracts never used in training or for any decision):** F1 went from 0.740 (best prompting) to **0.889**, hallucinated text from 24.6% to **2.3%**, valid JSON from 92.3% to **99.5%**, and latency halved (5.68s to 2.81s per call).
+**Result on a held-out test set (194 examples from 37 contracts never used in training; all model choices made on the validation set):** F1 went from 0.740 (best prompting) to **0.924**, hallucinated text from 24.6% to **0.0%**, valid JSON from 92.3% to **100%**, and latency per call from 5.68s to 3.71s. This is the second model (v2); the first (v1) reached F1 0.889.
 
 ## 1. Problem
 
@@ -24,7 +24,7 @@ We fine-tuned because we needed a specific behaviour from the model: answer in s
 
 RAG can't do this on its own. RAG (retrieval-augmented generation) can find the parts of a contract that look related to a clause, but deciding whether that clause is really present needs a model that reads and understands the text. A big model could do this from a prompt, but contracts are often confidential, so sending them to an external API may not be allowed. A small fine-tuned model runs locally.
 
-The baselines confirmed that prompting the small model was not enough. Adding few-shot examples raised precision (0.507 to 0.667 on valid) but made hallucination worse (21.7% to 27.1%), because the model copied sentences from the examples, and it was slower (4.54s to 5.89s). After fine-tuning, the behaviour is in the weights: short prompt, no examples to leak, 2.3% hallucination on test.
+The baselines confirmed that prompting the small model was not enough. Adding few-shot examples raised precision (0.507 to 0.667 on valid) but made hallucination worse (21.7% to 27.1%), because the model copied sentences from the examples, and it was slower (4.54s to 5.89s). After fine-tuning, the behaviour is in the weights: short prompt, no examples to leak, 2.3% hallucination on test for v1 and 0.0% for v2.
 
 ## 3. Data
 
@@ -54,6 +54,8 @@ Source: `results/data_stats.json`. All labels come from CUAD, where they were ma
 - **Smoke test first** (50 iterations on 100 examples): memory fit, ~8.6 s/iteration, and an important lesson: loss was already 0.055 while the model answered `found: false` to everything. The found decision is one token among ~50, so **loss is not the metric**.
 - **Own eval harness** (`src/eval.py`): greedy decoding, strict Pydantic parsing, and per-run JSON with every prediction, so every number can be traced to an example (`src/inspect_pred.py`).
 - **Checkpoint chosen on the full valid set**, not on val loss. Targets were written before any training (`LEARNING_LOG.md`, Phase 2).
+- **v2: one change, more data** (`src/make_v2_data.py`, `configs/lora_v2.yaml`). Error analysis of v1 on valid showed that 13 of 15 wrong-text answers were a neighbouring, look-alike sentence in the right area (only 2 were lead-ins), and v1 had used only 500 of the ~1,569 train positives. v2 trains on all of v1's 1,000 examples plus 626 more from the same train contracts (1,626; 813 positive / 813 negative, half of the negatives hard); valid and test files are byte-identical to v1's. Same LoRA config; 480 iterations so each example is seen about as often as in v1 (~0.6 epoch), with warmup and decay scaled.
+- **Decoding for v2:** greedy with repetition penalty 1.05 (`--repetition-penalty`), applied to both v1 and v2 when comparing them. A gate on valid was fixed before the v2 results were seen: span match above v1, F1 ≥ 0.92, precision ≥ 0.97, hallucination not above v1, valid JSON ≥ 99%.
 
 ### Metrics
 
@@ -78,37 +80,65 @@ Source: `results/data_stats.json`. All labels come from CUAD, where they were ma
 
 Resuming for 200 more iterations made the model worse (it400 recall 0.577), so iteration 300 was kept.
 
-### Test (194), run once (`results/FINAL_*_test.json`)
+v2 (more data, `configs/lora_v2.yaml`) and the decoding fix:
+
+| run | valid JSON | precision | recall | F1 | span match | hallucination | latency |
+|---|---|---|---|---|---|---|---|
+| v2 it240 | 97.9% | 0.946 | 0.746 | 0.835 | 59.2% | 5.4% | 2.90s |
+| v2 it360 | 98.6% | 0.982 | 0.789 | 0.875 | 66.2% | 1.8% | 3.05s |
+| v2 it480 | 98.6% | 0.984 | 0.859 | 0.917 | 71.8% | 1.6% | 2.98s |
+| v1 it300 + repetition penalty 1.05 | 100.0% | 1.000 | 0.873 | 0.932 | 66.2% | 6.5% | 3.24s |
+| **v2 it480 + repetition penalty 1.05 (chosen)** | **99.3%** | **0.984** | **0.873** | **0.925** | **73.2%** | **3.2%** | 3.26s |
+
+v2 it480 first failed the gate (F1 0.917, valid JSON 98.6%) because 2 of 146 answers got stuck in a repetition loop until the token limit, both on clauses it had correctly found. The repetition penalty changed only 3 of 146 v2 outputs (2 loops fixed, 1 already-wrong answer became invalid JSON) and 1 of 146 v1 outputs, and v2 then passed the gate.
+
+### Test (194), once per final model (`results/FINAL_*_test.json`)
 
 | run | valid JSON | precision | recall | F1 | span match | hallucination | latency |
 |---|---|---|---|---|---|---|---|
 | B0 base, zero-shot | 92.8% | 0.506 | 0.968 | 0.664 | 56.4% | 21.7% | 3.10s |
 | B1 base, few-shot | 92.3% | 0.675 | 0.819 | 0.740 | 56.4% | 24.6% | 5.68s |
-| **LoRA it300** | **99.5%** | **0.930** | **0.851** | **0.889** | **68.1%** | **2.3%** | **2.81s** |
+| v1 LoRA it300 | 99.5% | 0.930 | 0.851 | 0.889 | 68.1% | 2.3% | 2.81s |
+| **v2 LoRA it480 + repetition penalty 1.05** | **100.0%** | **0.944** | **0.904** | **0.924** | **71.3%** | **0.0%** | 3.71s |
 
-F1 per clause type on test, LoRA vs B1: Governing Law 0.947 vs 0.727, Termination For Convenience 0.919 vs 0.750, Non-Compete 0.815 vs 0.583, Cap On Liability 0.800 vs 0.700, Anti-Assignment 0.947 vs 0.878.
+The test set has been scored twice: once for v1, once for v2. Every v2 decision (data, steps, checkpoint, decoding, gate) was made on valid; test was only run after v2 had passed the gate.
+
+Per clause type on test, F1 / span match:
+
+| clause type | B1 | v1 | v2 |
+|---|---|---|---|
+| Governing Law | 0.727 / — | 0.947 / 85.0% | **1.000 / 95.0%** |
+| Termination For Convenience | 0.750 / — | 0.919 / 55.0% | **0.976 / 80.0%** |
+| Non-Compete | 0.583 / — | **0.815 / 57.1%** | 0.800 / 42.9% |
+| Cap On Liability | 0.700 / — | 0.800 / **55.0%** | **0.842** / 50.0% |
+| Anti-Assignment | 0.878 / — | 0.947 / **85.0%** | **0.950** / 80.0% |
+
+Against v1, v2 fixed 11 test spans and broke 8 (64 to 67 of 94 correct). It improved most where data was added most; Non-Compete got the fewest new examples (+37, against +66 to +70 for the other types, because CUAD has few Non-Compete contracts) and its span match dropped (8 to 6 of 14).
 
 ### Golden (60, balanced subset of test) (`results/FINAL_*_golden.json`)
 
 | run | valid JSON | precision | recall | F1 | span match | hallucination | latency |
 |---|---|---|---|---|---|---|---|
 | B1 base, few-shot | 85.0% | 0.639 | 0.767 | 0.697 | 46.7% | 27.8% | 5.27s |
-| **LoRA it300** | **100.0%** | 0.964 | 0.900 | **0.931** | **76.7%** | **0.0%** | 3.43s |
+| v1 LoRA it300 | 100.0% | **0.964** | **0.900** | **0.931** | **76.7%** | 0.0% | 3.43s |
+| v2 LoRA it480 + repetition penalty 1.05 | 100.0% | 0.929 | 0.867 | 0.897 | 70.0% | 0.0% | 3.85s |
+
+On this 60-example subset v2 is slightly worse than v1 (21 against 23 of 30 spans; 1 fixed, 3 broken). With 30 positives, one example is 3.3 points.
 
 ### Targets set before training (checked on test)
 
-| target | result | |
+| target | v1 | v2 |
 |---|---|---|
-| valid JSON ≥ 99% | 99.5% | pass |
-| precision ≥ 0.80 | 0.930 | pass |
-| F1 ≥ 0.85 | 0.889 | pass |
-| hallucination ≤ 10% | 2.3% | pass |
-| latency < B1 | 2.81s vs 5.68s | pass |
-| span match ≥ 70% | 68.1% | **miss** |
+| valid JSON ≥ 99% | 99.5% pass | 100.0% pass |
+| precision ≥ 0.80 | 0.930 pass | 0.944 pass |
+| F1 ≥ 0.85 | 0.889 pass | 0.924 pass |
+| hallucination ≤ 10% | 2.3% pass | 0.0% pass |
+| latency < B1 (5.68s) | 2.81s pass | 3.71s pass |
+| span match ≥ 70% | 68.1% **miss** | 71.3% pass |
 
-**General ability:** 5 general prompts (summarise, a fact question, an email, explain an NDA to a child, a list) give normal answers almost identical to the base model's, with no JSON leaking in (`results/phase5_general_check.json`).
+**General ability:** 5 general prompts (summarise, a fact question, an email, explain an NDA to a child, a list) give normal answers almost identical to the base model's, with no JSON leaking in, for both v1 (`results/phase5_general_check.json`) and v2 (`results/phase5b_general_check_v2.json`).
 
-Latency is measured on a fanless laptop that slows down when hot, so compare it only within one table.
+Latency is measured on a fanless laptop that slows down when hot, so compare it only between runs made in the same session. v1 itself took 2.11s on valid in one session and 3.24s in another, so the v2 latency rise is mostly machine state, not the model.
 
 ## 6. Failure examples and fixes
 
@@ -121,7 +151,13 @@ Latency is measured on a fanless laptop that slows down when hot, so compare it 
 **3. Merging the adapter into the 4-bit model broke it.** After `mlx_lm.fuse`, test F1 dropped from 0.889 to 0.756 and precision from 0.930 to 0.625 (`results/FINAL_FUSED_test.json`). Fusing into 16-bit (`--dequantize`) gave 40/40 outputs identical to base + adapter on a valid check, so fusing itself is lossless. The cause is re-quantizing to 4 bits: measured over all adapted matrices, the rounding error is 1.29× the size of the LoRA update at 4-bit (0.15× at 8-bit).
 *Fix:* deploy the 4-bit base + the 20 MB adapter (the verified setup). Lesson: re-run eval after every conversion step.
 
-**Still open: wrong or partial spans.** The model sometimes finds the right chunk but copies a neighbouring sentence or only a lead-in (e.g. "The Parties agree and acknowledge that:" instead of the liability clause that follows). This is why span match misses its target.
+**4. v1 copied the wrong sentence in the right area.** On valid, 13 of 15 wrong-text answers were a neighbouring look-alike (a warranty disclaimer instead of the liability disclaimer, a "counterparts" sentence instead of governing law), and only 2 were lead-ins ending in ":".
+*Fix:* more examples of the same kind (v2: 626 more from the same train contracts, nothing else changed). Span match: 68.1% to 71.3% on test.
+
+**5. v2 got stuck in repetition loops.** 2 of 146 valid answers repeated a phrase ("nor Array or its Controlled Affiliates, nor ...") or blank lines until the 800-token limit, so the JSON never closed. Training uses the correct previous tokens (teacher forcing), so loops only appear at generation time.
+*Fix:* repetition penalty 1.05 at decoding (no retraining), measured on both models: 3 of 146 v2 outputs changed. Valid JSON on test: 100%.
+
+**Still open: wrong spans for Non-Compete and Cap On Liability.** v2 still sometimes copies a neighbouring sentence, most often for these two types (test span match 42.9% and 50.0%). On valid, routing these two types to v1 and the rest to v2 gave 77.5% span match (55 of 71) against 73.2% for v2 alone; this was not tested on test, because the per-type test results had already been seen.
 
 ## 7. Demo
 
@@ -129,7 +165,8 @@ A CLI demo (contract text in, verified clause JSON out, with a guard that blocks
 
 ## 8. Limitations
 
-- Span match is 68.1% on test, below the 70% target; wrong-sentence picks are the main remaining error.
+- Span match is 71.3% on test; wrong-sentence picks are still the main error, and Non-Compete (42.9%) and Cap On Liability (50.0%) are weaker in v2 than in v1.
+- The test set has been used twice (v1 and v2), so v2's test score is slightly less independent than v1's.
 - Small evaluation sets: 94 test positives (14 for Non-Compete), so one example moves recall by about 1 point.
 - Labels are CUAD's human expert labels; our extra review of the golden set was done by an AI assistant, not a lawyer.
 - Keyword retrieval in the demo was checked on one contract only.
@@ -147,6 +184,9 @@ uv run python src/eval.py --split valid --run-name B0_zero_shot
 uv run python src/eval.py --split valid --few-shot --run-name B1_few_shot
 uv run mlx_lm.lora -c configs/lora_v1.yaml                    # ~54 min on an M3 Air
 uv run python src/eval.py --split test --adapter adapters/lora_v1 --run-name FT_test
+PYTHONPATH=src uv run python src/make_v2_data.py               # v2 data: v1's train + 626 more
+uv run mlx_lm.lora -c configs/lora_v2.yaml                    # v2, 480 iterations
+uv run python src/eval.py --split test --adapter adapters/lora_v2 --repetition-penalty 1.05 --run-name FINAL_FT2_test
 ```
 
 `results/summary.md` is rebuilt from `results/*.json` after every eval run.
@@ -156,7 +196,7 @@ uv run python src/eval.py --split test --adapter adapters/lora_v1 --run-name FT_
 ```bash
 git clone https://github.com/dv2202/clause-finetune.git && cd clause-finetune
 uv sync
-uv run hf download rambo2202/clausefinder-qwen2.5-1.5b-lora-mlx --local-dir adapters/final_it300
+uv run hf download rambo2202/clausefinder-qwen2.5-1.5b-lora-mlx --local-dir adapters/final_v2_it480
 uv run python app/demo.py app/samples/tuniu_cooperation_agreement.txt   # downloads the base model on first run
 ```
 
@@ -166,10 +206,12 @@ uv run python app/demo.py app/samples/tuniu_cooperation_agreement.txt   # downlo
 |---|---|
 | `src/prompts.py` | the one shared prompt builder |
 | `src/prepare_data.py` | CUAD to chunked, labelled, split JSONL |
+| `src/make_v2_data.py` | v2 training set (v1's train + more from the same contracts) |
 | `src/eval.py` | eval harness and metrics |
 | `src/show_failures.py`, `src/inspect_pred.py` | error analysis tools |
 | `src/general_check.py` | general-ability (forgetting) check |
-| `configs/` | smoke, v1 and resume training configs |
+| `configs/` | smoke, v1, resume and v2 training configs |
+| `results/final_adapter.json` | which adapter is final, its sha256 and decoding settings |
 | `app/demo.py` | CLI demo with retrieval and the verify guard |
 | `results/` | every run as JSON, logs, `summary.md` |
 | `LEARNING_LOG.md` | concepts and interview notes per phase |

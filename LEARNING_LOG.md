@@ -284,3 +284,43 @@ A: Never display the model's text. Use it to locate text in the document: exact 
 
 **Q: What did you learn from deploying the model?**
 A: Fusing the adapter into the 4-bit base silently dropped F1 from 0.889 to 0.756, because re-quantization noise was larger than the LoRA update. I only caught it because I re-ran the eval after fusing. So the deployed artifact is base + adapter, and every conversion step gets an eval.
+
+## Phase 4b: v2, improving span match (more data + a decoding fix)
+
+**Error analysis first (valid, v1).** 15 positives were found but copied with the wrong text. Buckets: 7 same-topic wrong sentence, 3 warranty disclaimer mistaken for liability cap, 3 boilerplate ("counterparts", "entire agreement"), 2 lead-ins ending in ":". My guess from the demo ("lead-ins are the main problem") was wrong: 2 of 15. Measure before fixing.
+
+**One change: more data.** v1 used 500 of ~1,569 train positives, and 300 steps × batch 2 = 600 examples seen, so it never saw 40% of its own data. v2 = v1's 1,000 + 626 new examples from the same train contracts (`src/make_v2_data.py`), 1:1 positive/negative, half hard. Non-Compete only reached 137 positives (max 2 per contract). valid/test copied byte-for-byte (sha256 checked). New adapter trained from the base, not resumed (resuming hurt before: lr jumps back up, AdamW state is lost, same data again).
+
+**Config:** same as v1; 480 iters (0.59 epoch, like v1's 0.6), warmup 48 (10%), cosine decay 432.
+
+**Training loss** fell from 0.594 to 0.042 in 10 steps: with `mask_prompt`, loss is only on the JSON answer, and most of it is fixed format or text copied from the prompt. The hard tokens (true/false, where the span starts and ends) are a few of ~50–100. Val loss: 0.606 → 0.051 → 0.037 → 0.016 → 0.019 (iters 1/120/240/360/480), no clear overfitting.
+
+**Gate fixed before seeing v2 results:** span > 66.2%, F1 ≥ 0.92, precision ≥ 0.97, hallucination ≤ v1, valid JSON ≥ 99%.
+
+**Valid results:** it240 F1 0.835 / span 59.2%, it360 0.875 / 66.2%, it480 0.917 / 71.8%. it480 failed the gate on F1 and valid JSON because of 2 repetition loops (e.g. "nor Array or its Controlled Affiliates, nor ...") that ran to 800 tokens, both on clauses it had correctly found.
+
+**Decoding fix:** repetition penalty 1.05 (`--repetition-penalty` in `src/eval.py`): tokens used in the last 20 get logit / 1.05 (positive) or × 1.05 (negative). It is a decoding rule, not training: the weights don't change, so it must be the same in eval, test and the demo. Applied to both models for a fair comparison. It changed 3 of 146 v2 outputs (2 loops fixed, 1 already-wrong answer became invalid JSON) and 1 of 146 v1 outputs.
+- v1 + penalty: F1 0.932, span 66.2%, hallucination 6.5%, valid JSON 100%.
+- v2 + penalty: F1 0.925, span 73.2%, hallucination 3.2%, valid JSON 99.3%. **Passed the gate.**
+
+**Test (second use of test; all v2 choices made on valid):** v2 F1 0.924 (v1 0.889), span 71.3% (68.1%, now above the 70% target), hallucination 0.0% (2.3%), valid JSON 100% (99.5%). 11 spans fixed, 8 broken. Per type, span dropped for Non-Compete (57.1% → 42.9%, the type with the fewest new examples), Cap On Liability (55.0% → 50.0%) and Anti-Assignment (85.0% → 80.0%), and rose for Governing Law and Termination For Convenience. Golden (60): v2 F1 0.897 vs v1 0.931, span 21 vs 23 of 30. Forgetting check for v2: normal general answers (`results/phase5b_general_check_v2.json`). Demo contract: v2 4 of 5 types right (v1 3 of 5), Cap On Liability missed.
+
+**Valid-only finding:** v1 for Non-Compete + Cap, v2 for the rest → span 77.5% (55/71), F1 0.941. Not tested on test, because the per-type test results had already been seen.
+
+**Concepts:**
+- Training vs decoding: training changes weights; decoding settings (greedy, repetition penalty, max tokens) change how scores become text. Both are part of the shipped system.
+- Exposure bias: SFT uses teacher forcing (the true previous tokens), so the model never sees its own mistakes in training; loops only appear at generation.
+- Catastrophic forgetting: training only on weak categories can break strong ones. Fix: replay a share of old data, use a low lr, gate per category.
+- Overfitting comes from too many passes over the same examples, not from many examples.
+- At enterprise scale: retrain LoRA from the base on the accumulated data (compute is cheap; data and evals are the cost), or continue with replay; multi-LoRA routing per category; a data flywheel from reviewed production errors; frozen per-category regression suites.
+
+**Interview Q&A**
+
+**Q: How did you improve the model after v1?**
+A: Error analysis on valid showed 13 of 15 span errors were look-alike sentences, not lead-ins. I added 63% more data from the same train contracts, changed nothing else, and compared on the same valid set with a gate set before training. Test span went from 68.1% to 71.3% and hallucination to 0.0%.
+
+**Q: Your new model failed its gate. What did you do?**
+A: I looked at the failures: 2 repetition loops, on clauses it had found correctly. I added a mild repetition penalty at decoding, applied it to both models, and checked its side effects (3 of 146 outputs changed). Then it passed. I didn't loosen the gate.
+
+**Q: Is v2 better everywhere?**
+A: No. Non-Compete and Cap On Liability got worse; Non-Compete got the fewest new examples. Golden was slightly worse too (2 examples). I report it, and the next step is targeted data with replay, or routing those two types to v1.

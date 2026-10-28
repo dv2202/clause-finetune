@@ -1,0 +1,88 @@
+{
+  "contract": "app/samples/tuniu_cooperation_agreement.txt",
+  "top_k": 3,
+  "adapter": "adapters/final_v2_it480",
+  "report": {
+    "Governing Law": {
+      "found": true,
+      "chunks_checked": [
+        4,
+        0,
+        5
+      ],
+      "results": [
+        {
+          "chunk": 4,
+          "status": "VERIFIED",
+          "text": "This Agreement shall be governed by and interpreted pursuant to the laws of the People's Republic of China that are promulgated and are publicly available, provided that the general international business practices shall apply if the laws of the People's Republic of China that are promulgated and are publicly available do not involve any matter in relation to this Agreement.",
+          "char_start": 11146,
+          "char_end": 11523
+        }
+      ]
+    },
+    "Termination For Convenience": {
+      "found": true,
+      "chunks_checked": [
+        3,
+        2,
+        4
+      ],
+      "results": [
+        {
+          "chunk": 3,
+          "status": "VERIFIED",
+          "text": "Party B shall have the right to terminate this Agreement in advance without the prior written consent from Party A, bysending a written notice to Party A but Party A may not terminate or rescind this Agreement;",
+          "char_start": 7268,
+          "char_end": 7478
+        },
+        {
+          "chunk": 2,
+          "status": "VERIFIED",
+          "text": "Prior to the expiration of the Term of Cooperation , this Agreement shall only be terminated upon occurrence of the followingcircumstances:\n\n6.1.1 Party B shall have the right to terminate this Agreement in advance without the prior written consent from Party A, bysending a written notice to Party A but Party A may not terminate or rescind this Agreement;",
+          "char_start": 7121,
+          "char_end": 7478
+        }
+      ]
+    },
+    "Non-Compete": {
+      "found": true,
+      "chunks_checked": [
+        1
+      ],
+      "results": [
+        {
+          "chunk": 1,
+          "status": "VERIFIED",
+          "text": "Party A irrevocably undertakes that, without Party B's consent, Party A shall not conduct any other business or make any commercial arrangement, including without limitation being engaged in or otherwise participating in any commercial activities and businesses independently or together with any other person or entity, nor shall it carry out any activities that may be competitive with or cause adverse effect to Party B's business.",
+          "char_start": 3574,
+          "char_end": 4008
+        }
+      ]
+    },
+    "Cap On Liability": {
+      "found": false,
+      "chunks_checked": [
+        4,
+        2,
+        0
+      ],
+      "results": []
+    },
+    "Anti-Assignment": {
+      "found": true,
+      "chunks_checked": [
+        5,
+        0
+      ],
+      "results": [
+        {
+          "chunk": 5,
+          "status": "VERIFIED",
+          "text": "The rights and obligations of each Party under this Agreement shall not be transferred, except for the transfer by Party B to its affiliates.",
+          "char_start": 13885,
+          "char_end": 14026
+        }
+      ]
+    }
+  }
+}

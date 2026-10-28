@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 from mlx_lm import generate, load
-from mlx_lm.sample_utils import make_sampler
+from mlx_lm.sample_utils import make_logits_processors, make_sampler
 
 from prompts import MODEL_ID
 
@@ -25,28 +25,33 @@ PROMPTS = [
 ]
 
 
-def answer(model, tokenizer, prompt: str) -> str:
+def answer(model, tokenizer, prompt: str, processors: list) -> str:
     # Plain user turn, no ClauseFinder system prompt: we want the model's general behaviour.
     text = tokenizer.apply_chat_template([{"role": "user", "content": prompt}],
                                          add_generation_prompt=True, tokenize=False)
-    return generate(model, tokenizer, prompt=text, max_tokens=150, sampler=make_sampler(temp=0.0))
+    return generate(model, tokenizer, prompt=text, max_tokens=150, sampler=make_sampler(temp=0.0),
+                    logits_processors=processors)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--adapter", required=True)
+    ap.add_argument("--out", default="results/phase5_general_check.json")
+    ap.add_argument("--repetition-penalty", type=float, default=None)  # match the adapter's eval decoding
     args = ap.parse_args()
 
     rows = [{"prompt": p} for p in PROMPTS]
+    processors = make_logits_processors(repetition_penalty=args.repetition_penalty)
     for key, adapter in [("base", None), ("finetuned", args.adapter)]:
         model, tokenizer = load(MODEL_ID, adapter_path=adapter)
         for row in rows:
-            row[key] = answer(model, tokenizer, row["prompt"])
+            row[key] = answer(model, tokenizer, row["prompt"], processors)
             print(f"\n=== [{key}] {row['prompt'][:70]}\n{row[key]}", flush=True)
 
-    out = {"created": time.strftime("%Y-%m-%d %H:%M:%S"), "adapter": args.adapter, "rows": rows}
-    Path("results/phase5_general_check.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))
-    print("\nsaved results/phase5_general_check.json")
+    out = {"created": time.strftime("%Y-%m-%d %H:%M:%S"), "adapter": args.adapter,
+           "repetition_penalty": args.repetition_penalty, "rows": rows}
+    Path(args.out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+    print(f"\nsaved {args.out}")
 
 
 if __name__ == "__main__":

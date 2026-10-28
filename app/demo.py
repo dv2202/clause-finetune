@@ -20,13 +20,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))  # reuse the project's own code
 
 from mlx_lm import generate, load
-from mlx_lm.sample_utils import make_sampler
+from mlx_lm.sample_utils import make_logits_processors, make_sampler
 
 from eval import parse_output, ws
 from prepare_data import HARD_NEG_KEYWORDS, chunk, normalise
 from prompts import CLAUSE_TYPES, MODEL_ID, build_messages
 
 REVIEW_THRESHOLD = 0.85  # word-level similarity needed to offer the closest real text for review
+REPETITION_PENALTY = 1.05  # same decoding as the v2 valid/test evals (fixes rare repetition loops)
 
 
 # ---------- retrieval: pick which chunks the model reads ----------
@@ -88,7 +89,7 @@ def verify(pred: str, chunk_text: str, chunk_start: int, doc: str) -> dict:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("contract", help="path to a plain-text contract")
-    ap.add_argument("--adapter", default="adapters/final_it300")
+    ap.add_argument("--adapter", default="adapters/final_v2_it480")
     ap.add_argument("--top-k", type=int, default=3, help="chunks per clause type; 0 = all chunks")
     ap.add_argument("--out", default=None, help="optional path to save the JSON report")
     args = ap.parse_args()
@@ -100,6 +101,7 @@ def main():
 
     model, tokenizer = load(MODEL_ID, adapter_path=args.adapter)
     sampler = make_sampler(temp=0.0)
+    processors = make_logits_processors(repetition_penalty=REPETITION_PENALTY)
 
     report, calls, t0 = {}, 0, time.perf_counter()
     for clause_type in CLAUSE_TYPES:
@@ -108,7 +110,8 @@ def main():
         for i in picked:
             prompt = tokenizer.apply_chat_template(build_messages(clause_type, chunks[i]),
                                                    add_generation_prompt=True, tokenize=False)
-            raw = generate(model, tokenizer, prompt=prompt, max_tokens=800, sampler=sampler)
+            raw = generate(model, tokenizer, prompt=prompt, max_tokens=800, sampler=sampler,
+                           logits_processors=processors)
             calls += 1
             out = parse_output(raw)
             if out is None:

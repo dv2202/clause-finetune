@@ -1,0 +1,28 @@
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files: 100%|██████████| 9/9 [00:00<00:00, 1371.73it/s]
+[10/194] 39s elapsed, ~715s left
+[20/194] 76s elapsed, ~659s left
+[30/194] 106s elapsed, ~581s left
+[40/194] 147s elapsed, ~567s left
+[50/194] 175s elapsed, ~505s left
+[60/194] 211s elapsed, ~471s left
+[70/194] 250s elapsed, ~443s left
+[80/194] 298s elapsed, ~425s left
+[90/194] 345s elapsed, ~399s left
+[100/194] 376s elapsed, ~354s left
+[110/194] 411s elapsed, ~314s left
+[120/194] 449s elapsed, ~277s left
+[130/194] 482s elapsed, ~237s left
+[140/194] 528s elapsed, ~204s left
+[150/194] 560s elapsed, ~164s left
+[160/194] 594s elapsed, ~126s left
+[170/194] 627s elapsed, ~89s left
+[180/194] 664s elapsed, ~52s left
+[190/194] 705s elapsed, ~15s left
+[194/194] 719s elapsed, ~0s left
+
+FINAL_FT2_test on test (n=194): valid_json=100.0% P=0.944 R=0.904 F1=0.924 span_match=71.3% halluc=0.0% latency=3.71s
+  Governing Law                F1=1.000 P=1.000 R=1.000 span=95.0% halluc=0.0%
+  Termination For Convenience  F1=0.976 P=0.952 R=1.000 span=80.0% halluc=0.0%
+  Non-Compete                  F1=0.800 P=0.909 R=0.714 span=42.9% halluc=0.0%
+  Cap On Liability             F1=0.842 P=0.889 R=0.800 span=50.0% halluc=0.0%
+  Anti-Assignment              F1=0.950 P=0.950 R=0.950 span=80.0% halluc=0.0%

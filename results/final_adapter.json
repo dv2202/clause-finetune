@@ -1,11 +1,24 @@
 {
-  "chosen": "FT1_it300",
-  "why": "Best F1 on full valid (0.932) among checkpoints it150/225/300/400/500; see results/summary.md",
-  "adapter_dir": "adapters/final_it300",
-  "source": "adapters/lora_v1/0000300_adapters.safetensors (iter 300 of configs/lora_v1.yaml)",
-  "sha256": "dc65217e0753a397cbd7835f91cf08cc168f75380aebd2e6d4d0dd650bb54891",
+  "chosen": "FT2_it480",
+  "why": "Passed the pre-set valid gate with repetition_penalty 1.05 (span 73.2% vs v1 66.2%, F1 0.925 >= 0.92, precision 0.984, hallucination 3.2% vs 6.5%, valid JSON 99.3%); see results/FT2_it480_rp105.json and results/FT1_it300_rp105.json",
+  "adapter_dir": "adapters/final_v2_it480",
+  "source": "adapters/lora_v2/adapters.safetensors (iter 480 of configs/lora_v2.yaml)",
+  "sha256": "bbb44a2cd0da19a47b482826eb594ad150a7e7e5c8e3e63d3c95958c111fbc9a",
   "base_model": "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
-  "train_config": "configs/lora_v1.yaml",
-  "valid_eval": "results/FT1_it300.json",
-  "chosen_on": "2026-10-24"
+  "train_config": "configs/lora_v2.yaml",
+  "train_data": "data/processed_v2/train.jsonl (built by src/make_v2_data.py)",
+  "decoding": {"temperature": 0.0, "repetition_penalty": 1.05, "repetition_context_size": 20, "max_tokens": 800},
+  "valid_eval": "results/FT2_it480_rp105.json",
+  "test_eval": "results/FINAL_FT2_test.json",
+  "golden_eval": "results/FINAL_FT2_golden.json",
+  "chosen_on": "2026-10-28",
+  "previous": {
+    "chosen": "FT1_it300",
+    "adapter_dir": "adapters/final_it300",
+    "sha256": "dc65217e0753a397cbd7835f91cf08cc168f75380aebd2e6d4d0dd650bb54891",
+    "train_config": "configs/lora_v1.yaml",
+    "valid_eval": "results/FT1_it300.json",
+    "test_eval": "results/FINAL_FT_test.json",
+    "chosen_on": "2026-10-24"
+  }
 }

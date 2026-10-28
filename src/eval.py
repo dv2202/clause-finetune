@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Literal
 
 from mlx_lm import generate, load
-from mlx_lm.sample_utils import make_sampler
+from mlx_lm.sample_utils import make_logits_processors, make_sampler
 from pydantic import BaseModel, ValidationError
 
 from prompts import CLAUSE_TYPES, MODEL_ID, build_messages, parse_excerpt
@@ -125,6 +125,9 @@ def main():
     ap.add_argument("--run-name", required=True)
     ap.add_argument("--limit", type=int, default=None, help="only first N examples (smoke test)")
     ap.add_argument("--max-tokens", type=int, default=800)  # longest gold clause is ~480 words
+    # Off by default so old runs reproduce exactly. >1.0 makes recently used tokens less likely,
+    # to break loops like "nor X, nor X, nor X ..." (Phase 4b: 2 of 146 v2 outputs looped to max_tokens).
+    ap.add_argument("--repetition-penalty", type=float, default=None)
     args = ap.parse_args()
 
     records = [json.loads(line) for line in open(f"data/processed/{args.split}.jsonl")]
@@ -132,6 +135,8 @@ def main():
 
     model, tokenizer = load(args.model, adapter_path=args.adapter)
     sampler = make_sampler(temp=0.0)  # greedy: deterministic, so runs are comparable
+    # penalty looks back over the last 20 tokens (mlx-lm default window)
+    processors = make_logits_processors(repetition_penalty=args.repetition_penalty)
 
     preds = []
     t_start = time.perf_counter()
@@ -143,7 +148,8 @@ def main():
         prompt = tokenizer.apply_chat_template(build_messages(clause_type, excerpt, args.few_shot),
                                                add_generation_prompt=True, tokenize=False)
         t0 = time.perf_counter()
-        raw = generate(model, tokenizer, prompt=prompt, max_tokens=args.max_tokens, sampler=sampler)
+        raw = generate(model, tokenizer, prompt=prompt, max_tokens=args.max_tokens, sampler=sampler,
+                       logits_processors=processors)
         latency = time.perf_counter() - t0
 
         out = parse_output(raw)

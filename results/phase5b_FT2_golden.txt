@@ -1,0 +1,14 @@
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files: 100%|██████████| 9/9 [00:00<00:00, 1112.74it/s]
+[10/60] 36s elapsed, ~178s left
+[20/60] 74s elapsed, ~147s left
+[30/60] 116s elapsed, ~116s left
+[40/60] 150s elapsed, ~75s left
+[50/60] 191s elapsed, ~38s left
+[60/60] 231s elapsed, ~0s left
+
+FINAL_FT2_golden on golden (n=60): valid_json=100.0% P=0.929 R=0.867 F1=0.897 span_match=70.0% halluc=0.0% latency=3.85s
+  Governing Law                F1=1.000 P=1.000 R=1.000 span=83.3% halluc=0.0%
+  Termination For Convenience  F1=0.923 P=0.857 R=1.000 span=66.7% halluc=0.0%
+  Non-Compete                  F1=0.667 P=1.000 R=0.500 span=33.3% halluc=0.0%
+  Cap On Liability             F1=0.909 P=1.000 R=0.833 span=66.7% halluc=0.0%
+  Anti-Assignment              F1=0.923 P=0.857 R=1.000 span=100.0% halluc=0.0%
